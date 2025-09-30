@@ -1,0 +1,10 @@
+{
+    "tushare_token": "tushare_token_here",
+    "etf_codes": ["159632.SZ", "159670.SZ", "159770.SZ", "159995.SZ", "159871.SZ", "510210.SH"],
+    "start_date": "20250601",
+    "end_date": "20250929",
+    "risk_free_rate": 0.02,
+    "trading_days": 252,
+    "fields": "trade_date,close",
+    "output_dir": "outputs"
+}

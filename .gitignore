@@ -1,0 +1,10 @@
+.kilocode/
+outputs/
+test_*
+test_outputs/
+config.json
+*.log
+final_test.py
+project_plan.md
+simple_test.py
+technical_specification.md
