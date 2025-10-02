@@ -349,8 +349,7 @@ A: 系统基于历史数据和量化模型生成建议，仅供参考。投资�
 
 ## 📞 联系我们
 
-- 📧 Email: your-email@example.com
-- 🐛 Issues: [GitHub Issues](https://github.com/your-username/SharpETF/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/StanleyChanH/SharpETF/issues)
 - 📖 文档: [使用指南](ENHANCED_USAGE_GUIDE.md)
 
 ---
@@ -359,6 +358,6 @@ A: 系统基于历史数据和量化模型生成建议，仅供参考。投资�
 
 **免责声明**: 本系统仅供研究和学习使用，不构成投资建议。投资有风险，决策需谨慎。
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by [StanleyChanH]
 
 </div>
