@@ -10,8 +10,9 @@ from typing import List, Tuple
 import os
 import logging
 
-# 设置中文字体
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans']
+# 设置中文字体为 Noto Sans CJK SC（思源黑体 简体中文）
+plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK JP', 'WenQuanYi Micro Hei', 'SimHei']
+plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['axes.unicode_minus'] = False
 
 logger = logging.getLogger(__name__)
