@@ -24,6 +24,15 @@ from src.utils import (
     print_summary_table, Timer
 )
 
+# 导入新的增强模块
+from src.risk_manager import get_advanced_risk_manager
+from src.rebalancing_engine import get_rebalancing_engine
+from src.multi_objective_optimizer import get_multi_objective_optimizer
+from src.investment_tools import (
+    get_investment_calculator, get_signal_generator,
+    get_performance_attribution, get_portfolio_analyzer
+)
+
 # 尝试导入优化器，优先使用scipy版本
 try:
     from src.portfolio_optimizer_scipy import get_portfolio_optimizer_scipy as get_portfolio_optimizer
@@ -36,9 +45,9 @@ except ImportError:
         raise ImportError("没有可用的优化器，请安装scipy或cvxpy")
 
 
-class ETFSharpeOptimizer:
-    """ETF夏普比率最优组合研究主类"""
-    
+class EnhancedETFSharpeOptimizer:
+    """增强版ETF夏普比率最优组合研究系统"""
+
     def __init__(self):
         """初始化主类"""
         self.config = get_config()
@@ -47,7 +56,18 @@ class ETFSharpeOptimizer:
         self.portfolio_optimizer = get_portfolio_optimizer(self.config.risk_free_rate)
         self.evaluator = get_portfolio_evaluator(self.config.trading_days, self.config.risk_free_rate)
         self.visualizer = get_visualizer(self.config.output_dir)
-        
+
+        # 初始化新增模块
+        self.risk_manager = get_advanced_risk_manager()
+        self.rebalancing_engine = get_rebalancing_engine()
+        self.multi_objective_optimizer = get_multi_objective_optimizer(
+            self.config.risk_free_rate, self.config.trading_days
+        )
+        self.investment_calculator = get_investment_calculator()
+        self.signal_generator = get_signal_generator()
+        self.performance_attribution = get_performance_attribution()
+        self.portfolio_analyzer = get_portfolio_analyzer()
+
         # 存储中间结果
         self.raw_data = None
         self.returns = None
@@ -57,41 +77,58 @@ class ETFSharpeOptimizer:
         self.max_sharpe_ratio = None
         self.portfolio_returns = None
         self.metrics = None
-        
+        self.risk_report = None
+        self.rebalancing_report = None
+        self.multi_objective_results = None
+        self.investment_analysis = None
+
         # 记录使用的优化器类型
         logging.info(f"使用优化器: {OPTIMIZER_TYPE}")
+        logging.info("✅ 增强版ETF优化系统初始化完成")
     
     def run_analysis(self) -> None:
-        """运行完整的分析流程"""
+        """运行完整的增强分析流程"""
         print_welcome_banner()
-        
+
         try:
-            with Timer("完整分析流程"):
+            with Timer("完整增强分析流程"):
                 # 1. 数据获取
                 self._fetch_data()
-                
+
                 # 2. 数据处理
                 self._process_data()
-                
+
                 # 3. 组合优化
                 self._optimize_portfolio()
-                
-                # 4. 计算评估指标
+
+                # 4. 多目标优化比较
+                self._run_multi_objective_optimization()
+
+                # 5. 计算评估指标
                 self._evaluate_portfolio()
-                
-                # 5. 生成可视化
+
+                # 6. 高级风险分析
+                self._analyze_risks()
+
+                # 7. 再平衡策略分析
+                self._analyze_rebalancing()
+
+                # 8. 投资实用工具分析
+                self._analyze_investment_tools()
+
+                # 9. 生成可视化
                 self._generate_visualizations()
-                
-                # 6. 保存结果
+
+                # 10. 保存结果
                 self._save_results()
-                
-                # 7. 打印报告
-                self._print_final_report()
-            
-            logging.info("分析完成！")
-            
+
+                # 11. 打印增强报告
+                self._print_enhanced_final_report()
+
+            logging.info("✅ 增强分析完成！")
+
         except Exception as e:
-            logging.error(f"分析失败: {e}")
+            logging.error(f"❌ 分析失败: {e}")
             sys.exit(1)
     
     def _fetch_data(self) -> None:
@@ -203,40 +240,147 @@ class ETFSharpeOptimizer:
             
             save_results(results, "optimization_results.json")
     
-    def _print_final_report(self) -> None:
-        """打印最终报告"""
-        print("\n" + "="*80)
-        print("🎯 ETF夏普比率最优组合研究 - 最终报告")
-        print("="*80)
-        
+    def _run_multi_objective_optimization(self) -> None:
+        """运行多目标优化比较"""
+        with Timer("多目标优化分析"):
+            logging.info("🔄 开始多目标优化比较...")
+            self.multi_objective_results = self.multi_objective_optimizer.compare_optimization_methods(
+                self.annual_mean, self.cov_matrix, self.returns
+            )
+
+    def _analyze_risks(self) -> None:
+        """进行高级风险分析"""
+        with Timer("高级风险分析"):
+            logging.info("🔒 开始高级风险分析...")
+            self.risk_report = self.risk_manager.generate_risk_report(
+                self.portfolio_returns, self.optimal_weights,
+                self.config.etf_codes, self.returns
+            )
+
+    def _analyze_rebalancing(self) -> None:
+        """分析再平衡策略"""
+        with Timer("再平衡策略分析"):
+            logging.info("⚖️ 开始再平衡策略分析...")
+            # 模拟当前权重（假设有5%的偏离）
+            current_weights = self.optimal_weights + np.random.normal(0, 0.02, len(self.optimal_weights))
+            current_weights = np.maximum(current_weights, 0)
+            current_weights = current_weights / np.sum(current_weights)
+
+            self.rebalancing_report = self.rebalancing_engine.generate_rebalancing_report(
+                current_weights, self.optimal_weights, 1000000,  # 假设100万组合
+                self.portfolio_returns, self.config.etf_codes, self.returns
+            )
+
+    def _analyze_investment_tools(self) -> None:
+        """分析投资实用工具"""
+        with Timer("投资工具分析"):
+            logging.info("💼 开始投资工具分析...")
+
+            # 投资增长预测
+            growth_projection = self.investment_calculator.project_portfolio_growth(
+                self.metrics['annual_return'],
+                self.metrics['annual_volatility'],
+                years=5
+            )
+
+            # 行业敞口分析
+            sector_analysis = self.portfolio_analyzer.analyze_sector_exposure(
+                self.config.etf_codes, self.optimal_weights
+            )
+
+            # 投资建议
+            recommendations = self.portfolio_analyzer.generate_investment_recommendations(
+                self.risk_report, self.metrics
+            )
+
+            self.investment_analysis = {
+                'growth_projection': growth_projection,
+                'sector_analysis': sector_analysis,
+                'recommendations': recommendations
+            }
+
+    def _print_enhanced_final_report(self) -> None:
+        """打印增强版最终报告"""
+        print("\n" + "="*100)
+        print("🎯 增强版ETF投资组合优化系统 - 综合分析报告")
+        print("="*100)
+
         print(f"\n📅 分析期间: {self.config.start_date} 至 {self.config.end_date}")
         print(f"📊 分析标的: {', '.join(self.config.etf_codes)}")
         print(f"💰 无风险利率: {self.config.risk_free_rate:.2%}")
-        
-        print(f"\n🏆 最优组合表现:")
+
+        # 基础优化结果
+        print(f"\n🏆 最优组合基础表现:")
         print(f"  • 最大夏普比率: {self.max_sharpe_ratio:.4f}")
         print(f"  • 年化收益率: {self.metrics['annual_return']:.2%}")
         print(f"  • 年化波动率: {self.metrics['annual_volatility']:.2%}")
         print(f"  • 最大回撤: {self.metrics['max_drawdown']:.2%}")
-        
+        print(f"  • 夏普比率: {self.metrics['sharpe_ratio']:.4f}")
+
+        # 多目标优化比较
+        if self.multi_objective_results:
+            print(f"\n🔄 多目标优化比较:")
+            for method, result in self.multi_objective_results.items():
+                metrics = result['metrics']
+                print(f"  • {result['method']}: "
+                      f"收益={metrics['portfolio_return']:.2%}, "
+                      f"波动={metrics['portfolio_volatility']:.2%}, "
+                      f"夏普={metrics['sharpe_ratio']:.4f}")
+
+        # 风险分析结果
+        if self.risk_report:
+            risk_rating = self.risk_report.get('risk_rating', {}).get('overall_risk', '未知')
+            var_95 = self.risk_report.get('var_cvar_analysis', {}).get(0.95, {}).get('var_historical', 0)
+            concentration_hhi = self.risk_report.get('concentration_risk', {}).get('hhi', 0)
+
+            print(f"\n🔒 高级风险分析:")
+            print(f"  • 综合风险评级: {risk_rating}")
+            print(f"  • 95% VaR (历史): {var_95:.2%}")
+            print(f"  • 集中度指数 (HHI): {concentration_hhi:.0f}")
+
+        # 再平衡建议
+        if self.rebalancing_report:
+            needs_rebalancing = self.rebalancing_report.get('weight_analysis', {}).get('needs_rebalancing', False)
+            max_deviation = self.rebalancing_report.get('weight_analysis', {}).get('max_deviation', 0)
+
+            print(f"\n⚖️ 再平衡分析:")
+            print(f"  • 需要再平衡: {'是' if needs_rebalancing else '否'}")
+            print(f"  • 最大权重偏离: {max_deviation:.2%}")
+
+        # 投资建议
+        if self.investment_analysis:
+            recommendations = self.investment_analysis.get('recommendations', [])
+            growth_proj = self.investment_analysis.get('growth_projection', {})
+
+            print(f"\n💡 投资建议:")
+            for i, rec in enumerate(recommendations[:3], 1):  # 显示前3条建议
+                print(f"  {i}. {rec}")
+
+            print(f"\n📈 5年增长预测 (100万初始投资):")
+            print(f"  • 平均预期价值: {growth_proj.get('final_value_statistics', {}).get('mean', 0):,.0f}元")
+            print(f"  • 中位数价值: {growth_proj.get('final_value_statistics', {}).get('median', 0):,.0f}元")
+
+        # 权重分配
         print(f"\n⚖️ 最优权重分配:")
         for etf, weight in zip(self.config.etf_codes, self.optimal_weights):
-            if weight > 0.001:  # 只显示权重大于0.1%的ETF
+            if weight > 0.001:
                 print(f"  • {etf}: {weight:.2%}")
-        
+
+        # 文件输出
         print(f"\n📈 可视化图表:")
         print(f"  • 累计收益对比图: outputs/cumulative_returns.png")
         print(f"  • 有效前沿图: outputs/efficient_frontier.png")
         print(f"  • 权重饼图: outputs/portfolio_weights.png")
         print(f"  • 收益率分布图: outputs/returns_distribution.png")
-        
+
         print(f"\n💾 数据文件:")
         print(f"  • 详细结果: outputs/optimization_results.json")
         print(f"  • 运行日志: etf_optimizer.log")
-        
-        print("\n" + "="*80)
-        print("✅ 分析完成！所有结果已保存到 outputs/ 目录")
-        print("="*80)
+
+        print("\n" + "="*100)
+        print("✅ 增强分析完成！所有结果已保存到 outputs/ 目录")
+        print("🎯 本报告提供了全面的投资决策支持，建议结合个人风险承受能力进行投资")
+        print("="*100)
 
 
 def main():
@@ -244,11 +388,11 @@ def main():
     try:
         # 设置日志
         setup_logging("INFO")
-        
-        # 创建并运行分析器
-        optimizer = ETFSharpeOptimizer()
-        optimizer.run_analysis()
-        
+
+        # 创建并运行增强版分析器
+        enhanced_optimizer = EnhancedETFSharpeOptimizer()
+        enhanced_optimizer.run_analysis()
+
     except KeyboardInterrupt:
         logging.info("用户中断执行")
         sys.exit(0)
