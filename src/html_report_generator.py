@@ -526,6 +526,7 @@ class HTMLReportGenerator:
                 <li><a href="#overview">📋 投资概览</a></li>
                 <li><a href="#performance">📈 绩效指标</a></li>
                 <li><a href="#portfolio">⚖️ 组合配置</a></li>
+                <li><a href="#correlation">🔗 相关性分析</a></li>
                 <li><a href="#risk">🔒 风险分析</a></li>
                 <li><a href="#charts">📊 可视化分析</a></li>
                 <li><a href="#recommendations">💡 投资建议</a></li>
@@ -715,6 +716,164 @@ class HTMLReportGenerator:
         </div>
         """
 
+    def _generate_correlation_section(self, correlation_analysis: Optional[Dict[str, Any]] = None) -> str:
+        """生成相关性分析部分"""
+        if not correlation_analysis:
+            return """
+            <div id="correlation" class="section">
+                <h2>🔗 相关性分析</h2>
+                <div class="warning-box">
+                    <p>相关性分析数据暂不可用，建议在进行实际投资前进行详细的相关性评估。</p>
+                </div>
+            </div>
+            """
+
+        risk_analysis = correlation_analysis.get('risk_analysis', {})
+        summary = correlation_analysis.get('analysis_summary', {})
+        optimization_suggestions = correlation_analysis.get('optimization_suggestions', [])
+
+        risk_assessment = risk_analysis.get('risk_assessment', {})
+        risk_level = risk_assessment.get('risk_level', '未知')
+        diversification_score = summary.get('diversification_score', 0)
+        avg_correlation = summary.get('average_correlation', 0)
+        high_corr_pairs = summary.get('high_correlation_pairs', 0)
+        moderate_corr_pairs = summary.get('moderate_correlation_pairs', 0)
+
+        # 确定风险等级样式
+        risk_class = "risk-low" if risk_level in ["低风险"] else "risk-medium" if risk_level in ["中等风险"] else "risk-high"
+
+        # 生成高相关性ETF对表格
+        high_corr_table = ""
+        if risk_analysis.get('high_correlation_pairs'):
+            high_corr_table = """
+            <h4>⚠️ 高相关性ETF对</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ETF代码1</th>
+                            <th>ETF代码2</th>
+                            <th>相关系数</th>
+                            <th>风险等级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            """
+            for pair in risk_analysis.get('high_correlation_pairs', []):
+                high_corr_table += f"""
+                        <tr>
+                            <td>{pair.get('etf1', '')}</td>
+                            <td>{pair.get('etf2', '')}</td>
+                            <td>{pair.get('correlation', 0):.3f}</td>
+                            <td><span class="risk-indicator {risk_class}">{pair.get('risk_level', '')}</span></td>
+                        </tr>
+                """
+            high_corr_table += """
+                    </tbody>
+                </table>
+            </div>
+            """
+
+        # 生成优化建议列表
+        suggestions_html = ""
+        for i, suggestion in enumerate(optimization_suggestions[:5], 1):
+            suggestions_html += f"<li>{suggestion}</li>"
+
+  
+        return f"""
+        <div id="correlation" class="section">
+            <h2>🔗 相关性分析</h2>
+
+            <div class="metrics-grid">
+                <div class="metric-card {risk_class.replace('risk-', '')}">
+                    <div class="metric-value">{risk_level}</div>
+                    <div class="metric-label">相关性风险等级</div>
+                </div>
+
+                <div class="metric-card positive">
+                    <div class="metric-value">{diversification_score:.1f}</div>
+                    <div class="metric-label">分散化评分</div>
+                </div>
+
+                <div class="metric-card warning">
+                    <div class="metric-value">{avg_correlation:.3f}</div>
+                    <div class="metric-label">平均相关性</div>
+                </div>
+
+                <div class="metric-card negative">
+                    <div class="metric-value">{high_corr_pairs}</div>
+                    <div class="metric-label">高相关性ETF对</div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>指标</th>
+                            <th>数值</th>
+                            <th>说明</th>
+                            <th>评价</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>平均相关性</td>
+                            <td>{avg_correlation:.3f}</td>
+                            <td>所有ETF对的相关系数平均值</td>
+                            <td>{'较低' if avg_correlation < 0.3 else '适中' if avg_correlation < 0.5 else '较高'}</td>
+                        </tr>
+                        <tr>
+                            <td>高相关性ETF对</td>
+                            <td>{high_corr_pairs}对</td>
+                            <td>相关系数≥0.7的ETF对数</td>
+                            <td>{'较少' if high_corr_pairs == 0 else '一般' if high_corr_pairs <= 2 else '较多'}</td>
+                        </tr>
+                        <tr>
+                            <td>中等相关性ETF对</td>
+                            <td>{moderate_corr_pairs}对</td>
+                            <td>相关系数在0.5-0.7之间的ETF对数</td>
+                            <td>{'较少' if moderate_corr_pairs <= 2 else '一般' if moderate_corr_pairs <= 5 else '较多'}</td>
+                        </tr>
+                        <tr>
+                            <td>分散化评分</td>
+                            <td>{diversification_score:.1f}/100</td>
+                            <td>基于相关性的分散化程度评分</td>
+                            <td>{'优秀' if diversification_score >= 70 else '良好' if diversification_score >= 50 else '一般'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {high_corr_table}
+
+            <div class="collapsible">
+                <div class="collapsible-header">
+                    <span>🎯 相关性风险说明</span>
+                    <span>▼</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="warning-box">
+                        <h4>⚠️ 相关性风险要点</h4>
+                        <ul>
+                            <li><strong>高相关性风险：</strong>相关性过高会降低分散化效果，增加系统性风险</li>
+                            <li><strong>市场冲击：</strong>在市场剧烈波动时，相关性会上升，分散化效果减弱</li>
+                            <li><strong>集中风险：</strong>高相关性的ETF可能属于同一行业或主题，面临共同风险</li>
+                            <li><strong>波动放大：</strong>相关性高的组合可能表现出更大的波动性</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>💡 优化建议</h4>
+                        <ol>
+                            {suggestions_html}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+
     def _generate_risk_section(self, risk_report: Optional[Dict[str, Any]] = None) -> str:
         """生成风险分析部分"""
         if not risk_report:
@@ -760,7 +919,7 @@ class HTMLReportGenerator:
         </div>
         """
 
-    def _generate_charts_section(self) -> str:
+    def _generate_charts_section(self, correlation_analysis: Optional[Dict[str, Any]] = None) -> str:
         """生成可视化图表部分"""
         charts = [
             ("cumulative_returns.png", "累计收益对比图"),
@@ -768,6 +927,10 @@ class HTMLReportGenerator:
             ("portfolio_weights.png", "投资组合权重分布"),
             ("returns_distribution.png", "收益率分布图")
         ]
+
+        # 如果有相关性分析，添加相关性热力图
+        if correlation_analysis and correlation_analysis.get('heatmap_path'):
+            charts.append(("correlation_heatmap.png", "ETF相关性热力图"))
 
         charts_html = ""
         for chart_file, chart_title in charts:
@@ -870,7 +1033,8 @@ class HTMLReportGenerator:
                            optimization_results: Dict[str, Any],
                            performance_metrics: Dict[str, Any],
                            risk_report: Optional[Dict[str, Any]] = None,
-                           investment_analysis: Optional[Dict[str, Any]] = None) -> str:
+                           investment_analysis: Optional[Dict[str, Any]] = None,
+                           correlation_analysis: Optional[Dict[str, Any]] = None) -> str:
         """
         生成完整的HTML报告
 
@@ -880,6 +1044,7 @@ class HTMLReportGenerator:
             performance_metrics: 绩效指标
             risk_report: 风险分析报告（可选）
             investment_analysis: 投资分析（可选）
+            correlation_analysis: 相关性分析（可选）
 
         Returns:
             生成的HTML文件路径
@@ -911,8 +1076,9 @@ class HTMLReportGenerator:
                         {self._generate_portfolio_section(optimal_weights, etf_codes,
                                                         optimization_results.get('data_summary', {}).get('etf_annual_returns', {}),
                                                         {})}
+                        {self._generate_correlation_section(correlation_analysis)}
                         {self._generate_risk_section(risk_report)}
-                        {self._generate_charts_section()}
+                        {self._generate_charts_section(correlation_analysis)}
                         {self._generate_recommendations_section(investment_analysis)}
                     </div>
                     {self._generate_footer()}

@@ -33,6 +33,7 @@ from src.investment_tools import (
     get_performance_attribution, get_portfolio_analyzer
 )
 from src.html_report_generator import get_html_report_generator
+from src.correlation_analyzer import get_correlation_analyzer
 
 # 尝试导入优化器，优先使用scipy版本
 try:
@@ -58,6 +59,7 @@ class EnhancedETFSharpeOptimizer:
         self.evaluator = get_portfolio_evaluator(self.config.trading_days, self.config.risk_free_rate)
         self.visualizer = get_visualizer(self.config.output_dir)
         self.html_report_generator = get_html_report_generator(self.config.output_dir)
+        self.correlation_analyzer = get_correlation_analyzer()
 
         # 初始化新增模块
         self.risk_manager = get_advanced_risk_manager()
@@ -83,6 +85,7 @@ class EnhancedETFSharpeOptimizer:
         self.rebalancing_report = None
         self.multi_objective_results = None
         self.investment_analysis = None
+        self.correlation_analysis = None
 
         # 记录使用的优化器类型
         logging.info(f"使用优化器: {OPTIMIZER_TYPE}")
@@ -118,16 +121,19 @@ class EnhancedETFSharpeOptimizer:
                 # 8. 投资实用工具分析
                 self._analyze_investment_tools()
 
-                # 9. 生成可视化
+                # 9. 相关性分析
+                self._analyze_correlations()
+
+                # 10. 生成可视化
                 self._generate_visualizations()
 
-                # 10. 保存结果
+                # 11. 保存结果
                 self._save_results()
 
-                # 11. 生成HTML报告
+                # 12. 生成HTML报告
                 self._generate_html_report()
 
-                # 12. 打印增强报告
+                # 13. 打印增强报告
                 self._print_enhanced_final_report()
 
             logging.info("✅ 增强分析完成！")
@@ -238,9 +244,10 @@ class EnhancedETFSharpeOptimizer:
                 'data_summary': {
                     'period_days': len(self.returns),
                     'etf_annual_returns': self.annual_mean.to_dict(),
-                    'etf_volatilities': {etf: np.sqrt(self.cov_matrix.loc[etf, etf]) 
+                    'etf_volatilities': {etf: np.sqrt(self.cov_matrix.loc[etf, etf])
                                        for etf in self.annual_mean.index}
-                }
+                },
+                'correlation_analysis': self.correlation_analysis if self.correlation_analysis else {}
             }
   
             save_results(results, "optimization_results.json")
@@ -278,7 +285,8 @@ class EnhancedETFSharpeOptimizer:
                     optimization_results=optimization_data,
                     performance_metrics=self.metrics,
                     risk_report=getattr(self, 'risk_report', None),
-                    investment_analysis=getattr(self, 'investment_analysis', None)
+                    investment_analysis=getattr(self, 'investment_analysis', None),
+                    correlation_analysis=getattr(self, 'correlation_analysis', None)
                 )
 
                 logging.info(f"✅ HTML报告生成完成: {report_path}")
@@ -346,6 +354,14 @@ class EnhancedETFSharpeOptimizer:
                 'recommendations': recommendations
             }
 
+    def _analyze_correlations(self) -> None:
+        """进行相关性分析"""
+        with Timer("相关性分析"):
+            logging.info("🔗 开始相关性分析...")
+            self.correlation_analysis = self.correlation_analyzer.generate_correlation_report(
+                self.returns, self.optimal_weights, self.config.etf_codes
+            )
+
     def _print_enhanced_final_report(self) -> None:
         """打印增强版最终报告"""
         print("\n" + "="*100)
@@ -393,6 +409,17 @@ class EnhancedETFSharpeOptimizer:
             print(f"\n⚖️ 再平衡分析:")
             print(f"  • 需要再平衡: {'是' if needs_rebalancing else '否'}")
             print(f"  • 最大权重偏离: {max_deviation:.2%}")
+
+        # 相关性分析
+        if self.correlation_analysis:
+            risk_assessment = self.correlation_analysis.get('risk_analysis', {}).get('risk_assessment', {})
+            summary = self.correlation_analysis.get('analysis_summary', {})
+
+            print(f"\n🔗 相关性分析:")
+            print(f"  • 相关性风险等级: {risk_assessment.get('risk_level', '未知')}")
+            print(f"  • 分散化评分: {summary.get('diversification_score', 0):.1f}/100")
+            print(f"  • 平均相关性: {summary.get('average_correlation', 0):.3f}")
+            print(f"  • 高相关性ETF对: {summary.get('high_correlation_pairs', 0)}对")
 
         # 投资建议
         if self.investment_analysis:
