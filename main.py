@@ -32,6 +32,7 @@ from src.investment_tools import (
     get_investment_calculator, get_signal_generator,
     get_performance_attribution, get_portfolio_analyzer
 )
+from src.html_report_generator import get_html_report_generator
 
 # 尝试导入优化器，优先使用scipy版本
 try:
@@ -56,6 +57,7 @@ class EnhancedETFSharpeOptimizer:
         self.portfolio_optimizer = get_portfolio_optimizer(self.config.risk_free_rate)
         self.evaluator = get_portfolio_evaluator(self.config.trading_days, self.config.risk_free_rate)
         self.visualizer = get_visualizer(self.config.output_dir)
+        self.html_report_generator = get_html_report_generator(self.config.output_dir)
 
         # 初始化新增模块
         self.risk_manager = get_advanced_risk_manager()
@@ -122,7 +124,10 @@ class EnhancedETFSharpeOptimizer:
                 # 10. 保存结果
                 self._save_results()
 
-                # 11. 打印增强报告
+                # 11. 生成HTML报告
+                self._generate_html_report()
+
+                # 12. 打印增强报告
                 self._print_enhanced_final_report()
 
             logging.info("✅ 增强分析完成！")
@@ -237,9 +242,51 @@ class EnhancedETFSharpeOptimizer:
                                        for etf in self.annual_mean.index}
                 }
             }
-            
+  
             save_results(results, "optimization_results.json")
-    
+
+    def _generate_html_report(self) -> None:
+        """生成HTML报告"""
+        with Timer("HTML报告生成"):
+            logging.info("📝 开始生成HTML分析报告...")
+
+            try:
+                # 准备报告数据
+                config_data = {
+                    'etf_codes': self.config.etf_codes,
+                    'start_date': self.config.start_date,
+                    'end_date': self.config.end_date,
+                    'risk_free_rate': self.config.risk_free_rate,
+                    'trading_days': self.config.trading_days
+                }
+
+                optimization_data = {
+                    'optimal_weights': dict(zip(self.config.etf_codes, self.optimal_weights)),
+                    'max_sharpe_ratio': self.max_sharpe_ratio,
+                    'portfolio_return': self.annual_mean.values @ self.optimal_weights,
+                    'portfolio_volatility': np.sqrt(self.optimal_weights.T @ self.cov_matrix.values @ self.optimal_weights),
+                    'data_summary': {
+                        'etf_annual_returns': self.annual_mean.to_dict(),
+                        'etf_volatilities': {etf: np.sqrt(self.cov_matrix.loc[etf, etf])
+                                           for etf in self.annual_mean.index}
+                    }
+                }
+
+                # 生成HTML报告
+                report_path = self.html_report_generator.generate_html_report(
+                    config=config_data,
+                    optimization_results=optimization_data,
+                    performance_metrics=self.metrics,
+                    risk_report=getattr(self, 'risk_report', None),
+                    investment_analysis=getattr(self, 'investment_analysis', None)
+                )
+
+                logging.info(f"✅ HTML报告生成完成: {report_path}")
+
+            except Exception as e:
+                logging.error(f"❌ HTML报告生成失败: {e}")
+                # 不抛出异常，继续执行其他步骤
+
     def _run_multi_objective_optimization(self) -> None:
         """运行多目标优化比较"""
         with Timer("多目标优化分析"):
@@ -376,6 +423,10 @@ class EnhancedETFSharpeOptimizer:
         print(f"\n💾 数据文件:")
         print(f"  • 详细结果: outputs/optimization_results.json")
         print(f"  • 运行日志: etf_optimizer.log")
+
+        print(f"\n📊 HTML报告:")
+        print(f"  • 精美分析报告: outputs/etf_optimization_report.html")
+        print(f"    (包含完整的分析结果、可视化图表和投资建议)")
 
         print("\n" + "="*100)
         print("✅ 增强分析完成！所有结果已保存到 outputs/ 目录")
