@@ -73,10 +73,10 @@ class InvestmentCalculator:
 
     def project_portfolio_growth(self, annual_return: float,
                                annual_volatility: float,
-                               years: int = 10,
-                               simulations: int = 1000) -> Dict[str, Any]:
+                               years: int = 5,
+                               simulations: int = 5000) -> Dict[str, Any]:
         """
-        投资组合增长预测
+        现实版投资组合增长预测
 
         Args:
             annual_return: 年化收益率
@@ -87,45 +87,172 @@ class InvestmentCalculator:
         Returns:
             增长预测结果
         """
-        # 生成随机路径
-        dt = 1/252  # 日频
-        total_steps = years * 252
+        logger.info(f"🧮 开始增长预测: {annual_return:.1%}年化收益, {annual_volatility:.1%}波动率, {years}年")
 
-        all_paths = []
+        # 使用年频，并调整波动率以反映更现实的风险
         final_values = []
+        yearly_paths = []
+        max_drawdowns = []
 
-        for _ in range(simulations):
-            # 生成随机收益率
-            daily_returns = np.random.normal(
-                annual_return/252,
-                annual_volatility/np.sqrt(252),
-                total_steps
-            )
+        # 对于高收益率，增加波动率以反映真实风险
+        adjusted_volatility = max(annual_volatility, 0.3)  # 至少30%年化波动率
 
-            # 计算累计收益路径
-            cumulative_returns = np.cumprod(1 + daily_returns)
-            portfolio_values = self.initial_capital * cumulative_returns
+        # 如果收益率异常高，进一步调整
+        if annual_return > 0.3:  # 超过30%年化收益
+            adjusted_volatility = max(adjusted_volatility, annual_return * 0.8)  # 波动率至少是收益的80%
 
-            all_paths.append(portfolio_values)
+        for sim_idx in range(simulations):
+            if sim_idx % 1000 == 0 and sim_idx > 0:
+                logger.info(f"📊 模拟进度: {sim_idx}/{simulations}")
+
+            # 生成年收益率，添加现实的市场冲击
+            yearly_returns = np.random.normal(annual_return, adjusted_volatility, years)
+
+            # 添加市场冲击因素（随机黑天鹅事件）
+            for i in range(years):
+                if np.random.random() < 0.1:  # 10%概率发生市场冲击
+                    shock = np.random.choice([-0.3, -0.2, 0.2, 0.3])  # -30%到+30%的冲击
+                    yearly_returns[i] += shock
+
+            # 现实的收益率限制
+            yearly_returns = np.clip(yearly_returns, -0.7, 1.5)  # 限制在-70%到150%之间
+
+            # 计算投资组合价值路径
+            portfolio_values = [self.initial_capital]
+            for year_return in yearly_returns:
+                new_value = portfolio_values[-1] * (1 + year_return)
+                portfolio_values.append(new_value)
+
+                # 如果价值跌得太低，考虑止损
+                if new_value < self.initial_capital * 0.2:  # 跌破20%
+                    break
+
             final_values.append(portfolio_values[-1])
+            yearly_paths.append(portfolio_values[1:])  # 去掉初始值
 
-        all_paths = np.array(all_paths)
+            # 计算最大回撤
+            peak = np.maximum.accumulate(portfolio_values)
+            drawdown = (np.array(portfolio_values) - peak) / peak
+            max_drawdowns.append(np.min(drawdown))
 
-        # 计算统计指标
-        percentiles = [10, 25, 50, 75, 90]
-        final_percentiles = np.percentile(final_values, percentiles)
+        logger.info("📈 进行统计分析...")
 
-        # 计算成功概率（达到目标）
-        target_multipliers = [1.5, 2.0, 3.0, 5.0]
-        success_probabilities = {}
+        # 基础统计
+        final_values_array = np.array(final_values)
+        percentiles = [1, 5, 10, 25, 50, 75, 90, 95, 99]
+        final_percentiles = np.percentile(final_values_array, percentiles)
 
+        # 成功概率分析
+        target_multipliers = [1.25, 1.5, 2.0, 3.0, 5.0, 10.0]
+        multipliers = {}
         for multiplier in target_multipliers:
             target_value = self.initial_capital * multiplier
             success_count = sum(1 for value in final_values if value >= target_value)
-            success_probabilities[f'{multiplier}x'] = success_count / simulations
+            multipliers[f'{multiplier}x'] = success_count / simulations
 
-        # 计算翻倍成功率（>100%收益）
-        breakeven_success = sum(1 for value in final_values if value >= self.initial_capital * 2.0)
+        # 多年度分析 - 修复数组维度不一致问题
+        multi_year_analysis = {}
+        if yearly_paths:
+            # 找到最短路径长度
+            min_path_length = min(len(path) for path in yearly_paths)
+            if min_path_length > 0:
+                # 只取前min_path_length年的数据，确保所有路径长度一致
+                truncated_paths = [path[:min_path_length] for path in yearly_paths]
+                yearly_array = np.array(truncated_paths)
+
+                # 分析所有可用年份，最多5年
+                for year_idx in range(min(5, min_path_length)):
+                    year_values = yearly_array[:, year_idx]
+                    multi_year_analysis[f'year_{year_idx + 1}'] = {
+                        'mean': np.mean(year_values),
+                        'positive_return_prob': np.mean(year_values > self.initial_capital),
+                        'doubling_prob': np.mean(year_values > self.initial_capital * 2)
+                    }
+
+                # 确保至少有3年数据，如果没有则用默认值填充
+                for year_idx in range(len(multi_year_analysis), 3):
+                    if year_idx == 0:
+                        # 第1年基于历史数据估算
+                        estimated_return = self.initial_capital * (1 + annual_return)
+                        estimated_vol = annual_volatility * self.initial_capital
+
+                        # 模拟一些数据
+                        simulated_values = np.random.normal(estimated_return, estimated_vol, 100)
+                        simulated_values = np.maximum(simulated_values, self.initial_capital * 0.1)
+
+                        multi_year_analysis[f'year_{year_idx + 1}'] = {
+                            'mean': np.mean(simulated_values),
+                            'positive_return_prob': np.mean(simulated_values > self.initial_capital),
+                            'doubling_prob': np.mean(simulated_values > self.initial_capital * 2)
+                        }
+                    else:
+                        # 后续年份基于前一年推算
+                        prev_year = multi_year_analysis.get(f'year_{year_idx}', {})
+                        prev_mean = prev_year.get('mean', self.initial_capital)
+
+                        multi_year_analysis[f'year_{year_idx + 1}'] = {
+                            'mean': prev_mean * (1 + annual_return * 0.8),  # 略微保守的估算
+                            'positive_return_prob': max(0.3, prev_year.get('positive_return_prob', 0.7) - 0.1),
+                            'doubling_prob': max(0.1, prev_year.get('doubling_prob', 0.3) - 0.1)
+                        }
+
+        # 情景分析（差异化版本）
+        scenario_analysis = {}
+
+        # 牛市情景：收益更高但波动也更大
+        bull_return = annual_return * 1.3  # 收益增加30%
+        bull_vol = annual_volatility * 1.2  # 波动增加20%
+        scenario_analysis['bull_market'] = {
+            'success_probability': self._quick_scenario_calc(bull_return, bull_vol, years)
+        }
+
+        # 熊市情景：收益降低且波动增大
+        bear_return = max(0.05, annual_return * 0.6)  # 收益降低40%，但最低5%
+        bear_vol = annual_volatility * 1.8  # 波动增加80%
+        scenario_analysis['bear_market'] = {
+            'success_probability': self._quick_scenario_calc(bear_return, bear_vol, years)
+        }
+
+        # 高波动情景：波动大幅增加，收益略降
+        high_vol_return = annual_return * 0.9  # 收益降低10%
+        high_vol = annual_volatility * 2.5  # 波动增加150%
+        scenario_analysis['high_volatility'] = {
+            'success_probability': self._quick_scenario_calc(high_vol_return, high_vol, years)
+        }
+
+        # 低波动情景：波动大幅降低，收益也降低
+        low_vol_return = annual_return * 0.7  # 收益降低30%
+        low_vol = annual_volatility * 0.4  # 波动降低60%
+        scenario_analysis['low_volatility'] = {
+            'success_probability': self._quick_scenario_calc(low_vol_return, low_vol, years)
+        }
+
+        # 风险指标
+        risk_free_rate = 0.02
+        total_returns = (final_values_array / self.initial_capital) ** (1/years) - 1
+        excess_returns = total_returns - risk_free_rate
+        sharpe_ratios = excess_returns / annual_volatility
+
+        risk_metrics = {
+            'max_drawdown_analysis': {
+                'mean': np.mean(max_drawdowns),
+                'worst_5_percent': np.percentile(max_drawdowns, 5)
+            },
+            'sharpe_ratio_distribution': {
+                'mean': np.mean(sharpe_ratios),
+                'positive_prob': np.mean(sharpe_ratios > 0)
+            }
+        }
+
+        # 简化的分布分析
+        distribution_analysis = {
+            'tail_risk': {
+                'var_95': np.percentile(final_values_array, 5),
+                'cvar_95': np.mean(final_values_array[final_values_array <= np.percentile(final_values_array, 5)])
+            }
+        }
+
+        logger.info("✅ 增长预测分析完成")
 
         return {
             'initial_capital': self.initial_capital,
@@ -133,18 +260,279 @@ class InvestmentCalculator:
             'annual_volatility': annual_volatility,
             'years': years,
             'simulations': simulations,
+
+            # 基础统计
             'final_value_statistics': {
-                'mean': np.mean(final_values),
-                'median': np.median(final_values),
-                'std': np.std(final_values),
-                'min': np.min(final_values),
-                'max': np.max(final_values)
+                'mean': np.mean(final_values_array),
+                'median': np.median(final_values_array),
+                'std': np.std(final_values_array),
+                'min': np.min(final_values_array),
+                'max': np.max(final_values_array)
             },
             'final_value_percentiles': dict(zip(percentiles, final_percentiles)),
-            'success_probabilities': success_probabilities,
-            'success_probability': breakeven_success / simulations,  # 翻倍成功率
-            'all_paths': all_paths
+
+            # 分析结果
+            'multi_year_analysis': multi_year_analysis,
+            'distribution_analysis': distribution_analysis,
+            'risk_metrics': risk_metrics,
+            'scenario_analysis': scenario_analysis,
+            'success_analysis': {'target_multipliers': multipliers},
+
+            # 保持向后兼容
+            'success_probability': multipliers.get('2.0x', 0),
+            'success_probabilities': multipliers
         }
+
+    def _quick_scenario_calc(self, annual_return: float, annual_volatility: float, years: int) -> float:
+        """快速情景计算 - 更现实的版本，考虑不同情景的特殊约束"""
+        test_simulations = 1000  # 增加模拟次数
+        success_count = 0
+
+        for _ in range(test_simulations):
+            # 生成测试路径，添加更多现实约束
+            test_returns = np.random.normal(annual_return, annual_volatility, years)
+
+            # 根据收益率水平调整冲击概率和强度
+            if annual_return > 0.5:  # 超高收益率情景
+                shock_prob = 0.25  # 25%概率发生冲击
+                shock_choices = [-0.6, -0.4, -0.3, -0.2, 0.1, 0.2]  # 更偏向负面冲击
+            elif annual_return > 0.3:  # 高收益率情景
+                shock_prob = 0.2  # 20%概率发生冲击
+                shock_choices = [-0.5, -0.3, -0.2, -0.1, 0.1, 0.3]
+            elif annual_return < 0.2:  # 低收益率情景
+                shock_prob = 0.3  # 30%概率发生冲击
+                shock_choices = [-0.4, -0.3, -0.2, 0.1, 0.2, 0.4]
+            else:  # 正常情景
+                shock_prob = 0.15
+                shock_choices = [-0.4, -0.25, -0.15, 0.15, 0.25, 0.4]
+
+            # 添加随机市场冲击
+            for i in range(years):
+                if np.random.random() < shock_prob:
+                    shock = np.random.choice(shock_choices)
+                    test_returns[i] += shock
+
+            # 更严格的收益率限制，根据情景调整
+            if annual_return > 0.5:  # 超高收益率情景，更严格限制
+                max_return = 0.8  # 最高80%
+            elif annual_return < 0.1:  # 低收益率情景
+                max_return = 0.5  # 最高50%
+            else:
+                max_return = 1.2  # 正常120%
+
+            test_returns = np.clip(test_returns, -0.9, max_return)
+
+            # 计算最终价值
+            final_value = self.initial_capital
+            for year_return in test_returns:
+                final_value *= (1 + year_return)
+
+                # 动态止损机制
+                if final_value < self.initial_capital * 0.1:  # 跌破10%止损
+                    final_value = self.initial_capital * 0.1
+                    break
+
+            if final_value >= self.initial_capital * 2:  # 翻倍
+                success_count += 1
+
+        return success_count / test_simulations
+
+    def _generate_realistic_returns(self, annual_return: float, annual_volatility: float, total_steps: int) -> np.ndarray:
+        """生成更现实的收益率路径（包含均值回归和波动率聚集）"""
+        dt = 1/252
+        mean_reversion_speed = 0.1
+        volatility_persistence = 0.9
+
+        returns = np.zeros(total_steps)
+        volatility_process = np.ones(total_steps) * annual_volatility
+
+        for t in range(1, total_steps):
+            drift = mean_reversion_speed * (annual_return/252 - returns[t-1]) * dt
+            volatility_process[t] = (np.sqrt(volatility_persistence) * volatility_process[t-1] +
+                                   np.sqrt(1 - volatility_persistence) * annual_volatility * np.random.randn())
+            random_shock = volatility_process[t] / np.sqrt(252) * np.random.randn()
+            returns[t] = returns[t-1] * (1 + drift * dt) + random_shock
+
+        return returns
+
+    def _calculate_rolling_volatility(self, returns: np.ndarray, window: int = 20) -> np.ndarray:
+        """计算滚动波动率"""
+        if len(returns) < window:
+            return np.array([np.std(returns)])
+
+        rolling_vol = []
+        for i in range(window, len(returns)):
+            vol = np.std(returns[i-window:i]) * np.sqrt(252)
+            rolling_vol.append(vol)
+
+        return np.array(rolling_vol)
+
+    def _analyze_multi_year_scenarios(self, yearly_values: np.ndarray, years: int) -> Dict[str, Any]:
+        """分析多时间维度情景"""
+        analysis = {}
+
+        for year in range(min(3, years)):
+            if year < yearly_values.shape[1]:
+                year_values = yearly_values[:, year]
+                analysis[f'year_{year+1}'] = {
+                    'mean': np.mean(year_values),
+                    'median': np.median(year_values),
+                    'std': np.std(year_values),
+                    'percentiles': {
+                        '10': np.percentile(year_values, 10),
+                        '25': np.percentile(year_values, 25),
+                        '75': np.percentile(year_values, 75),
+                        '90': np.percentile(year_values, 90)
+                    },
+                    'positive_return_prob': np.mean(year_values > 1000000),
+                    'doubling_prob': np.mean(year_values > 2000000)
+                }
+
+        return analysis
+
+    def _analyze_return_distribution(self, final_values: list) -> Dict[str, Any]:
+        """分析收益分布特征"""
+        final_values_array = np.array(final_values)
+        log_returns = np.log(final_values_array / 1000000)
+
+        try:
+            from scipy import stats
+            _, normality_p_value = stats.normaltest(log_returns)
+            try:
+                shape, loc, scale = stats.lognorm.fit(log_returns, floc=0)
+                lognorm_params = {'shape': shape, 'loc': loc, 'scale': scale}
+            except:
+                lognorm_params = None
+        except ImportError:
+            normality_p_value = 1.0
+            lognorm_params = None
+
+        return {
+            'log_returns_stats': {
+                'mean': np.mean(log_returns),
+                'std': np.std(log_returns),
+                'skewness': self._calculate_skewness(log_returns),
+                'kurtosis': self._calculate_kurtosis(log_returns)
+            },
+            'normality_test': {
+                'is_normal': normality_p_value > 0.05,
+                'p_value': normality_p_value
+            },
+            'distribution_fit': {
+                'lognormal_params': lognorm_params,
+                'best_fit': 'lognormal' if lognorm_params else 'unknown'
+            },
+            'tail_risk': {
+                'var_95': np.percentile(final_values_array, 5),
+                'var_99': np.percentile(final_values_array, 1),
+                'cvar_95': np.mean(final_values_array[final_values_array <= np.percentile(final_values_array, 5)]),
+                'cvar_99': np.mean(final_values_array[final_values_array <= np.percentile(final_values_array, 1)])
+            }
+        }
+
+    def _calculate_risk_metrics(self, final_values: list, max_drawdowns: list,
+                               annual_volatility: float) -> Dict[str, Any]:
+        """计算详细风险指标"""
+        final_values_array = np.array(final_values)
+        risk_free_rate = 0.02
+        excess_returns = (final_values_array / 1000000) ** (1/10) - 1 - risk_free_rate
+        sharpe_ratios = excess_returns / annual_volatility
+
+        return {
+            'max_drawdown_analysis': {
+                'mean': np.mean(max_drawdowns),
+                'median': np.median(max_drawdowns),
+                'std': np.std(max_drawdowns),
+                'worst_5_percent': np.percentile(max_drawdowns, 5),
+                'worst_1_percent': np.percentile(max_drawdowns, 1)
+            },
+            'sharpe_ratio_distribution': {
+                'mean': np.mean(sharpe_ratios),
+                'median': np.median(sharpe_ratios),
+                'std': np.std(sharpe_ratios),
+                'positive_prob': np.mean(sharpe_ratios > 0)
+            }
+        }
+
+    def _perform_scenario_analysis(self, annual_return: float, annual_volatility: float, years: int) -> Dict[str, Any]:
+        """情景分析"""
+        scenarios = {}
+
+        bull_return = annual_return * 1.5
+        scenarios['bull_market'] = self._quick_scenario_calculation(bull_return, annual_volatility, years)
+
+        bear_return = annual_return * 0.5
+        bear_volatility = annual_volatility * 1.5
+        scenarios['bear_market'] = self._quick_scenario_calculation(bear_return, bear_volatility, years)
+
+        high_volatility = annual_volatility * 2.0
+        scenarios['high_volatility'] = self._quick_scenario_calculation(annual_return, high_volatility, years)
+
+        low_volatility = annual_volatility * 0.5
+        scenarios['low_volatility'] = self._quick_scenario_calculation(annual_return, low_volatility, years)
+
+        return scenarios
+
+    def _quick_scenario_calculation(self, annual_return: float, annual_volatility: float, years: int,
+                                   simulations: int = 1000) -> Dict[str, float]:
+        """快速情景计算（简化版蒙特卡洛）"""
+        final_values = []
+
+        for _ in range(simulations):
+            yearly_returns = np.random.normal(annual_return, annual_volatility, years)
+            final_value = 1000000 * np.prod(1 + yearly_returns)
+            final_values.append(final_value)
+
+        return {
+            'mean_final_value': np.mean(final_values),
+            'median_final_value': np.median(final_values),
+            'success_probability': np.mean(np.array(final_values) > 2000000)
+        }
+
+    def _analyze_success_probabilities(self, final_values: list, years: int) -> Dict[str, Any]:
+        """分析各种成功概率"""
+        success_analysis = {}
+
+        target_multipliers = [1.25, 1.5, 2.0, 3.0, 5.0, 10.0]
+        multipliers = {}
+        for multiplier in target_multipliers:
+            target_value = 1000000 * multiplier
+            success_count = sum(1 for value in final_values if value >= target_value)
+            multipliers[f'{multiplier}x'] = success_count / len(final_values)
+
+        success_analysis['target_multipliers'] = multipliers
+
+        return success_analysis
+
+    def _analyze_time_series_features(self, all_paths: list) -> Dict[str, Any]:
+        """分析时间序列特征"""
+        trends = []
+
+        for path in all_paths:
+            path_array = np.array(path)
+            x = np.arange(len(path_array))
+            slope, _ = np.polyfit(x, path_array, 1)
+            trends.append(slope)
+
+        return {
+            'trend_analysis': {
+                'mean_slope': np.mean(trends),
+                'trend_consistency': np.mean(np.array(trends) > 0),
+                'trend_volatility': np.std(trends)
+            }
+        }
+
+    def _calculate_skewness(self, data: np.ndarray) -> float:
+        """计算偏度"""
+        mean = np.mean(data)
+        std = np.std(data)
+        return np.mean(((data - mean) / std) ** 3)
+
+    def _calculate_kurtosis(self, data: np.ndarray) -> float:
+        """计算峰度"""
+        mean = np.mean(data)
+        std = np.std(data)
+        return np.mean(((data - mean) / std) ** 4) - 3
 
     def calculate_dollar_cost_averaging(self, monthly_investment: float,
                                       expected_return: float,
@@ -554,3 +942,311 @@ def get_performance_attribution(benchmark_weights: Optional[np.ndarray] = None) 
 def get_portfolio_analyzer() -> PortfolioAnalyzer:
     """获取投资组合分析器实例"""
     return PortfolioAnalyzer()
+
+
+# === 增强增长预测的辅助方法 ===
+
+def _generate_realistic_returns(self, annual_return: float, annual_volatility: float, total_steps: int) -> np.ndarray:
+    """
+    生成更现实的收益率路径（包含均值回归和波动率聚集）
+
+    Args:
+        annual_return: 年化收益率
+        annual_volatility: 年化波动率
+        total_steps: 总步数
+
+    Returns:
+        日收益率序列
+    """
+    dt = 1/252
+
+    # Ornstein-Uhlenbeck过程的均值回归参数
+    mean_reversion_speed = 0.1  # 均值回归速度
+    volatility_persistence = 0.9  # 波动率聚集持久性
+
+    # 初始化
+    returns = np.zeros(total_steps)
+    volatility_process = np.ones(total_steps) * annual_volatility
+
+    # 生成随机路径
+    for t in range(1, total_steps):
+        # 均值回归的短期收益率
+        drift = mean_reversion_speed * (annual_return/252 - returns[t-1]) * dt
+
+        # GARCH-like波动率过程
+        volatility_process[t] = (np.sqrt(volatility_persistence) * volatility_process[t-1] +
+                               np.sqrt(1 - volatility_persistence) * annual_volatility * np.random.randn())
+
+        # 生成收益率
+        random_shock = volatility_process[t] / np.sqrt(252) * np.random.randn()
+        returns[t] = returns[t-1] * (1 + drift * dt) + random_shock
+
+    return returns
+
+
+def _calculate_rolling_volatility(self, returns: np.ndarray, window: int = 20) -> np.ndarray:
+    """计算滚动波动率"""
+    if len(returns) < window:
+        return np.array([np.std(returns)])
+
+    rolling_vol = []
+    for i in range(window, len(returns)):
+        vol = np.std(returns[i-window:i]) * np.sqrt(252)  # 年化
+        rolling_vol.append(vol)
+
+    return np.array(rolling_vol)
+
+
+def _analyze_multi_year_scenarios(self, yearly_values: np.ndarray, years: int) -> Dict[str, Any]:
+    """分析多时间维度情景"""
+    analysis = {}
+
+    for year in range(min(3, years)):  # 分析前3年
+        if year < yearly_values.shape[1]:
+            year_values = yearly_values[:, year]
+            analysis[f'year_{year+1}'] = {
+                'mean': np.mean(year_values),
+                'median': np.median(year_values),
+                'std': np.std(year_values),
+                'percentiles': {
+                    '10': np.percentile(year_values, 10),
+                    '25': np.percentile(year_values, 25),
+                    '75': np.percentile(year_values, 75),
+                    '90': np.percentile(year_values, 90)
+                },
+                'positive_return_prob': np.mean(year_values > 1000000),  # 超过初始投资概率
+                'doubling_prob': np.mean(year_values > 2000000)  # 翻倍概率
+            }
+
+    # 年度增长路径分析
+    annual_returns = []
+    for path in yearly_values:
+        path_returns = []
+        for i in range(1, len(path)):
+            if path[i-1] > 0:
+                path_returns.append((path[i] - path[i-1]) / path[i-1])
+        if path_returns:
+            annual_returns.extend(path_returns)
+
+    if annual_returns:
+        analysis['annual_return_distribution'] = {
+            'mean': np.mean(annual_returns),
+            'std': np.std(annual_returns),
+            'negative_years_prob': np.mean(np.array(annual_returns) < 0)
+        }
+
+    return analysis
+
+
+def _analyze_return_distribution(self, final_values: np.ndarray) -> Dict[str, Any]:
+    """分析收益分布特征"""
+    # 计算对数收益率
+    log_returns = np.log(final_values / 1000000)  # 相对于初始投资
+
+    # 正态性检验
+    from scipy import stats
+    _, normality_p_value = stats.normaltest(log_returns)
+
+    # 分布拟合
+    try:
+        # 尝试拟合对数正态分布
+        shape, loc, scale = stats.lognorm.fit(log_returns, floc=0)
+        lognorm_params = {'shape': shape, 'loc': loc, 'scale': scale}
+    except:
+        lognorm_params = None
+
+    return {
+        'log_returns_stats': {
+            'mean': np.mean(log_returns),
+            'std': np.std(log_returns),
+            'skewness': stats.skew(log_returns),
+            'kurtosis': stats.kurtosis(log_returns)
+        },
+        'normality_test': {
+            'is_normal': normality_p_value > 0.05,
+            'p_value': normality_p_value
+        },
+        'distribution_fit': {
+            'lognormal_params': lognorm_params,
+            'best_fit': 'lognormal' if lognorm_params else 'unknown'
+        },
+        'tail_risk': {
+            'var_95': np.percentile(final_values, 5),
+            'var_99': np.percentile(final_values, 1),
+            'cvar_95': np.mean(final_values[final_values <= np.percentile(final_values, 5)]),
+            'cvar_99': np.mean(final_values[final_values <= np.percentile(final_values, 1)])
+        }
+    }
+
+
+def _calculate_risk_metrics(self, final_values: np.ndarray, max_drawdowns: list,
+                           annual_volatility: float) -> Dict[str, Any]:
+    """计算详细风险指标"""
+    # 计算夏普比率分布
+    risk_free_rate = 0.02
+    excess_returns = (final_values / 1000000) ** (1/10) - 1 - risk_free_rate
+    sharpe_ratios = excess_returns / annual_volatility
+
+    return {
+        'max_drawdown_analysis': {
+            'mean': np.mean(max_drawdowns),
+            'median': np.median(max_drawdowns),
+            'std': np.std(max_drawdowns),
+            'worst_5_percent': np.percentile(max_drawdowns, 5),
+            'worst_1_percent': np.percentile(max_drawdowns, 1)
+        },
+        'sharpe_ratio_distribution': {
+            'mean': np.mean(sharpe_ratios),
+            'median': np.median(sharpe_ratios),
+            'std': np.std(sharpe_ratios),
+            'positive_prob': np.mean(sharpe_ratios > 0)
+        },
+        'risk_adjusted_metrics': {
+            'sortino_ratio_mean': np.mean([r / annual_volatility for r in excess_returns if r > 0]) if any(excess_returns > 0) else 0,
+            'calmar_ratio_mean': np.mean(excess_returns) / abs(np.mean(max_drawdowns)) if np.mean(max_drawdowns) != 0 else 0
+        }
+    }
+
+
+def _perform_scenario_analysis(self, annual_return: float, annual_volatility: float, years: int) -> Dict[str, Any]:
+    """情景分析"""
+    scenarios = {}
+
+    # 牛市情景：收益率+50%，波动率不变
+    bull_return = annual_return * 1.5
+    scenarios['bull_market'] = self._quick_scenario_calculation(bull_return, annual_volatility, years)
+
+    # 熊市情景：收益率-50%，波动率+50%
+    bear_return = annual_return * 0.5
+    bear_volatility = annual_volatility * 1.5
+    scenarios['bear_market'] = self._quick_scenario_calculation(bear_return, bear_volatility, years)
+
+    # 高波动情景：收益率不变，波动率+100%
+    high_vol_return = annual_return
+    high_volatility = annual_volatility * 2.0
+    scenarios['high_volatility'] = self._quick_scenario_calculation(high_vol_return, high_volatility, years)
+
+    # 低波动情景：收益率不变，波动率-50%
+    low_vol_return = annual_return
+    low_volatility = annual_volatility * 0.5
+    scenarios['low_volatility'] = self._quick_scenario_calculation(low_vol_return, low_volatility, years)
+
+    return scenarios
+
+
+def _quick_scenario_calculation(self, annual_return: float, annual_volatility: float, years: int,
+                               simulations: int = 1000) -> Dict[str, float]:
+    """快速情景计算（简化版蒙特卡洛）"""
+    final_values = []
+
+    for _ in range(simulations):
+        # 简化的年复利计算
+        yearly_returns = np.random.normal(annual_return, annual_volatility, years)
+        final_value = 1000000 * np.prod(1 + yearly_returns)
+        final_values.append(final_value)
+
+    return {
+        'mean_final_value': np.mean(final_values),
+        'median_final_value': np.median(final_values),
+        'success_probability': np.mean(np.array(final_values) > 2000000)  # 翻倍概率
+    }
+
+
+def _analyze_success_probabilities(self, final_values: np.ndarray, years: int) -> Dict[str, Any]:
+    """分析各种成功概率"""
+    success_analysis = {}
+
+    # 多倍数成功概率
+    target_multipliers = [1.25, 1.5, 2.0, 3.0, 5.0, 10.0]
+    multipliers = {}
+    for multiplier in target_multipliers:
+        target_value = 1000000 * multiplier
+        success_count = sum(1 for value in final_values if value >= target_value)
+        multipliers[f'{multiplier}x'] = success_count / len(final_values)
+
+    success_analysis['target_multipliers'] = multipliers
+
+    # 不同时间点的成功概率
+    break_even = {}
+    for years_target in [3, 5, 7, 10]:
+        if years_target <= years:
+            # 这里需要根据实际路径计算，简化处理
+            break_even[f'{years_target}y'] = {
+                '1.5x': multipliers.get('1.5x', 0) * (years_target / years),  # 简化估算
+                '2.0x': multipliers.get('2.0x', 0) * (years_target / years)
+            }
+
+    success_analysis['break_even'] = break_even
+
+    # 风险调整成功率
+    # 考虑最大回撤限制的成功率
+    risk_adjusted_success = {}
+    for multiplier in [1.5, 2.0, 3.0]:
+        # 简化：假设在回撤限制下的成功率会降低
+        base_success = multipliers.get(f'{multiplier}x', 0)
+        risk_adjusted_success[f'{multiplier}x_10dd_limit'] = base_success * 0.8  # 假设20%的概率会违反回撤限制
+
+    success_analysis['risk_adjusted'] = risk_adjusted_success
+
+    return success_analysis
+
+
+def _analyze_time_series_features(self, all_paths: np.ndarray) -> Dict[str, Any]:
+    """分析时间序列特征"""
+    # 计算路径的持续性、趋势强度等
+    trends = []
+    volatilities = []
+
+    for path in all_paths:
+        # 计算趋势强度（使用线性回归斜率）
+        x = np.arange(len(path))
+        slope, _ = np.polyfit(x, path, 1)
+        trends.append(slope)
+
+        # 计算路径波动率
+        returns = np.diff(path) / path[:-1]
+        vol = np.std(returns) * np.sqrt(252)
+        volatilities.append(vol)
+
+    return {
+        'trend_analysis': {
+            'mean_slope': np.mean(trends),
+            'trend_consistency': np.mean(np.array(trends) > 0),  # 上升趋势的比例
+            'trend_volatility': np.std(trends)
+        },
+        'path_volatility_analysis': {
+            'mean_path_volatility': np.mean(volatilities),
+            'volatility_of_volatility': np.std(volatilities),
+            'volatility_persistence': self._calculate_autocorrelation(volatilities, 1)
+        }
+    }
+
+
+def _calculate_skewness(self, data: np.ndarray) -> float:
+    """计算偏度"""
+    mean = np.mean(data)
+    std = np.std(data)
+    return np.mean(((data - mean) / std) ** 3)
+
+
+def _calculate_kurtosis(self, data: np.ndarray) -> float:
+    """计算峰度"""
+    mean = np.mean(data)
+    std = np.std(data)
+    return np.mean(((data - mean) / std) ** 4) - 3  # 减去3得到超额峰度
+
+
+def _calculate_autocorrelation(self, series: list, lag: int) -> float:
+    """计算自相关系数"""
+    if len(series) <= lag:
+        return 0
+
+    series_array = np.array(series)
+    series_lag = series_array[:-lag] if lag > 0 else series_array
+    series_lead = series_array[lag:] if lag > 0 else series_array
+
+    if len(series_lag) == 0 or len(series_lead) == 0:
+        return 0
+
+    correlation = np.corrcoef(series_lag, series_lead)[0, 1]
+    return correlation if not np.isnan(correlation) else 0

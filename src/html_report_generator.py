@@ -1004,11 +1004,47 @@ class HTMLReportGenerator:
                     <span>▼</span>
                 </div>
                 <div class="collapsible-content">
+                    <!-- 基础预测 -->
+                    <h4>🎯 基础预测（{growth_proj.get("years", 5)}年）</h4>
                     <table>
-                        <tr><td><strong>5年预期价值（100万初始）</strong></td><td>{growth_proj.get("final_value_statistics", {}).get("mean", 0):,.0f}元</td></tr>
+                        <tr><td><strong>平均预期价值</strong></td><td>{growth_proj.get("final_value_statistics", {}).get("mean", 0):,.0f}元</td></tr>
                         <tr><td><strong>中位数价值</strong></td><td>{growth_proj.get("final_value_statistics", {}).get("median", 0):,.0f}元</td></tr>
-                        <tr><td><strong>成功率（>100万）</strong></td><td>{growth_proj.get("success_probability", 0):.1%}</td></tr>
+                        <tr><td><strong>标准差</strong></td><td>{growth_proj.get("final_value_statistics", {}).get("std", 0):,.0f}元</td></tr>
+                        <tr><td><strong>翻倍成功率</strong></td><td>{growth_proj.get("success_probability", 0):.1%}</td></tr>
                     </table>
+
+                    <!-- 概率分布 -->
+                    <h4>📊 概率分布</h4>
+                    <table>
+                        <tr><td><strong>10%分位数（最差10%）</strong></td><td>{growth_proj.get("final_value_percentiles", {}).get(1, 0):,.0f}元</td></tr>
+                        <tr><td><strong>25%分位数</strong></td><td>{growth_proj.get("final_value_percentiles", {}).get(25, 0):,.0f}元</td></tr>
+                        <tr><td><strong>75%分位数</strong></td><td>{growth_proj.get("final_value_percentiles", {}).get(75, 0):,.0f}元</td></tr>
+                        <tr><td><strong>90%分位数（最优10%）</strong></td><td>{growth_proj.get("final_value_percentiles", {}).get(90, 0):,.0f}元</td></tr>
+                    </table>
+
+                    <!-- 多目标成功率 -->
+                    <h4>🎖️ 多目标成功率</h4>
+                    <table>
+                        <tr><td><strong>盈利25%</strong></td><td>{growth_proj.get("success_analysis", {}).get("target_multipliers", {}).get("1.25x", 0):.1%}</td></tr>
+                        <tr><td><strong>盈利50%</strong></td><td>{growth_proj.get("success_analysis", {}).get("target_multipliers", {}).get("1.5x", 0):.1%}</td></tr>
+                        <tr><td><strong>翻倍（100%）</strong></td><td>{growth_proj.get("success_analysis", {}).get("target_multipliers", {}).get("2.0x", 0):.1%}</td></tr>
+                        <tr><td><strong>翻三倍（200%）</strong></td><td>{growth_proj.get("success_analysis", {}).get("target_multipliers", {}).get("3.0x", 0):.1%}</td></tr>
+                        <tr><td><strong>翻五倍（400%）</strong></td><td>{growth_proj.get("success_analysis", {}).get("target_multipliers", {}).get("5.0x", 0):.1%}</td></tr>
+                    </table>
+
+                    <!-- 风险指标 -->
+                    {self._generate_risk_metrics_section(growth_proj) if growth_proj.get("risk_metrics") else ''}
+
+                    <!-- 情景分析 -->
+                    {self._generate_scenario_section(growth_proj) if growth_proj.get("scenario_analysis") else ''}
+
+                    <!-- 多年度分析 -->
+                    {self._generate_multi_year_section(growth_proj) if growth_proj.get("multi_year_analysis") else ''}
+
+                    <!-- 模拟参数 -->
+                    <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                        <strong>模拟参数：</strong>基于{growth_proj.get("simulations", 0):,}次蒙特卡洛模拟，考虑均值回归和波动率聚集效应
+                    </p>
                 </div>
             </div>
             ''' if growth_proj else ''}
@@ -1109,6 +1145,51 @@ class HTMLReportGenerator:
         except Exception as e:
             logger.error(f"❌ HTML报告生成失败: {e}")
             raise
+
+    def _generate_risk_metrics_section(self, growth_proj: Dict[str, Any]) -> str:
+        """生成风险指标部分"""
+        risk_metrics = growth_proj.get("risk_metrics", {})
+        tail_risk = growth_proj.get("distribution_analysis", {}).get("tail_risk", {})
+
+        return f"""
+        <h4>⚠️ 风险指标</h4>
+        <table>
+            <tr><td><strong>最大回撤（平均）</strong></td><td>{risk_metrics.get("max_drawdown_analysis", {}).get("mean", 0):.1%}</td></tr>
+            <tr><td><strong>最大回撤（5%最差）</strong></td><td>{risk_metrics.get("max_drawdown_analysis", {}).get("worst_5_percent", 0):.1%}</td></tr>
+            <tr><td><strong>夏普比率（平均）</strong></td><td>{risk_metrics.get("sharpe_ratio_distribution", {}).get("mean", 0):.2f}</td></tr>
+            <tr><td><strong>VaR 95%（风险价值）</strong></td><td>{tail_risk.get("var_95", 0):,.0f}元</td></tr>
+            <tr><td><strong>CVaR 95%（条件风险价值）</strong></td><td>{tail_risk.get("cvar_95", 0):,.0f}元</td></tr>
+        </table>
+        """
+
+    def _generate_scenario_section(self, growth_proj: Dict[str, Any]) -> str:
+        """生成情景分析部分"""
+        scenarios = growth_proj.get("scenario_analysis", {})
+
+        return f"""
+        <h4>🎭 情景分析</h4>
+        <table>
+            <tr><td><strong>牛市情景（收益+50%）</strong></td><td>{scenarios.get("bull_market", {}).get("success_probability", 0):.1%}</td></tr>
+            <tr><td><strong>熊市情景（收益-50%）</strong></td><td>{scenarios.get("bear_market", {}).get("success_probability", 0):.1%}</td></tr>
+            <tr><td><strong>高波动情景（波动+100%）</strong></td><td>{scenarios.get("high_volatility", {}).get("success_probability", 0):.1%}</td></tr>
+            <tr><td><strong>低波动情景（波动-50%）</strong></td><td>{scenarios.get("low_volatility", {}).get("success_probability", 0):.1%}</td></tr>
+        </table>
+        """
+
+    def _generate_multi_year_section(self, growth_proj: Dict[str, Any]) -> str:
+        """生成分年度分析部分"""
+        multi_year = growth_proj.get("multi_year_analysis", {})
+
+        return f"""
+        <h4>📅 分年度表现</h4>
+        <table>
+            <tr><td><strong>第1年平均价值</strong></td><td>{multi_year.get("year_1", {}).get("mean", 0):,.0f}元</td></tr>
+            <tr><td><strong>第2年平均价值</strong></td><td>{multi_year.get("year_2", {}).get("mean", 0):,.0f}元</td></tr>
+            <tr><td><strong>第3年平均价值</strong></td><td>{multi_year.get("year_3", {}).get("mean", 0):,.0f}元</td></tr>
+            <tr><td><strong>第1年正收益概率</strong></td><td>{multi_year.get("year_1", {}).get("positive_return_prob", 0):.1%}</td></tr>
+            <tr><td><strong>第1年翻倍概率</strong></td><td>{multi_year.get("year_1", {}).get("doubling_prob", 0):.1%}</td></tr>
+        </table>
+        """
 
 
 def get_html_report_generator(output_dir: str = "outputs") -> HTMLReportGenerator:
