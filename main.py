@@ -74,6 +74,7 @@ class EnhancedETFSharpeOptimizer:
 
         # 存储中间结果
         self.raw_data = None
+        self.etf_names = None  # ETF中文名称映射
         self.returns = None
         self.annual_mean = None
         self.cov_matrix = None
@@ -145,8 +146,14 @@ class EnhancedETFSharpeOptimizer:
     def _fetch_data(self) -> None:
         """获取数据"""
         with Timer("数据获取"):
+            # 获取ETF价格数据
             self.raw_data = self.data_fetcher.fetch_etf_data()
+
+            # 获取ETF中文名称
+            self.etf_names = self.data_fetcher.get_etf_names(self.config.etf_codes)
+
             logging.info(f"获取到 {len(self.raw_data)} 个交易日数据")
+            logging.info(f"成功获取 {len(self.etf_names)} 个ETF名称信息")
     
     def _process_data(self) -> None:
         """处理数据"""
@@ -201,7 +208,7 @@ class EnhancedETFSharpeOptimizer:
             
             # 打印评估报告
             self.evaluator.print_evaluation_report(
-                self.metrics, self.optimal_weights, self.config.etf_codes
+                self.metrics, self.optimal_weights, self.config.etf_codes, self.etf_names
             )
     
     def _generate_visualizations(self) -> None:
@@ -215,7 +222,8 @@ class EnhancedETFSharpeOptimizer:
                 returns_list=self.efficient_frontier_data['returns'],
                 optimal_risk=self.efficient_frontier_data['optimal_risk'],
                 optimal_return=self.efficient_frontier_data['optimal_return'],
-                portfolio_returns=self.portfolio_returns
+                portfolio_returns=self.portfolio_returns,
+                etf_names=self.etf_names
             )
     
     def _save_results(self) -> None:
@@ -286,7 +294,8 @@ class EnhancedETFSharpeOptimizer:
                     performance_metrics=self.metrics,
                     risk_report=getattr(self, 'risk_report', None),
                     investment_analysis=getattr(self, 'investment_analysis', None),
-                    correlation_analysis=getattr(self, 'correlation_analysis', None)
+                    correlation_analysis=getattr(self, 'correlation_analysis', None),
+                    etf_names=self.etf_names
                 )
 
                 logging.info(f"✅ HTML报告生成完成: {report_path}")

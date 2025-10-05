@@ -22,6 +22,7 @@ class DataFetcher:
         """初始化数据获取器"""
         self.config = get_config()
         self.pro = self._init_tushare()
+        self.etf_names_cache = {}  # ETF名称缓存
         
     def _init_tushare(self) -> ts.pro_api:
         """初始化Tushare API"""
@@ -235,6 +236,62 @@ class DataFetcher:
         date_diff = df['trade_date'].diff().dt.days
         if (date_diff > 10).any():
             logger.warning("⚠️ 数据中存在较大的日期间隔")
+
+    def get_etf_names(self, etf_codes: List[str]) -> Dict[str, str]:
+        """
+        获取ETF中文名称列表
+
+        Args:
+            etf_codes: ETF代码列表
+
+        Returns:
+            ETF代码到中文名称的映射字典
+        """
+        etf_names = {}
+
+        logger.info("📋 获取ETF中文名称...")
+
+        for code in etf_codes:
+            # 检查缓存
+            if code in self.etf_names_cache:
+                etf_names[code] = self.etf_names_cache[code]
+                continue
+
+            try:
+                # 调用Tushare API获取ETF基本信息
+                df = self.pro.fund_basic(ts_code=code)
+
+                if not df.empty and 'name' in df.columns:
+                    name = df.iloc[0]['name']
+                    etf_names[code] = name
+                    self.etf_names_cache[code] = name  # 缓存结果
+                    logger.info(f"✅ {code}: {name}")
+                else:
+                    etf_names[code] = f"{code}(未知名称)"
+                    logger.warning(f"⚠️ 无法获取 {code} 的名称信息")
+
+                # 避免API调用频率限制
+                time.sleep(0.1)
+
+            except Exception as e:
+                etf_names[code] = f"{code}(获取失败)"
+                logger.error(f"❌ 获取 {code} 名称失败: {e}")
+
+        logger.info(f"✅ 成功获取 {len([k for k, v in etf_names.items() if not '失败' in v and not '未知' in v])}/{len(etf_codes)} 个ETF名称")
+        return etf_names
+
+    def get_etf_name(self, etf_code: str) -> str:
+        """
+        获取单个ETF的中文名称
+
+        Args:
+            etf_code: ETF代码
+
+        Returns:
+            ETF中文名称
+        """
+        names = self.get_etf_names([etf_code])
+        return names.get(etf_code, f"{etf_code}(未知)")
 
 
 def get_data_fetcher() -> DataFetcher:

@@ -35,15 +35,17 @@ class Visualizer:
         """创建输出目录"""
         os.makedirs(self.output_dir, exist_ok=True)
     
-    def plot_cumulative_returns(self, returns: pd.DataFrame, 
+    def plot_cumulative_returns(self, returns: pd.DataFrame,
                               optimal_weights: np.ndarray,
+                              etf_names: dict = None,
                               save_path: str = None) -> None:
         """
         绘制累计收益对比图
-        
+
         Args:
             returns: 各ETF日收益率DataFrame
             optimal_weights: 最优权重向量
+            etf_names: ETF代码到中文名称的映射字典
             save_path: 保存路径，默认为None
         """
         logger.info("📈 生成累计收益对比图...")
@@ -61,8 +63,10 @@ class Visualizer:
             # 绘制各ETF累计收益
             for col in returns.columns:
                 etf_cumulative = (1 + returns[col]).cumprod()
-                plt.plot(returns.index, etf_cumulative, 
-                        label=col, alpha=0.7, linewidth=1.5)
+                # 使用ETF中文名称作为标签，如果没有则使用代码
+                display_name = etf_names.get(col, col) if etf_names else col
+                plt.plot(returns.index, etf_cumulative,
+                        label=f'{display_name}\n({col})', alpha=0.7, linewidth=1.5)
             
             # 绘制最优组合累计收益
             plt.plot(returns.index, portfolio_cumulative, 
@@ -148,15 +152,17 @@ class Visualizer:
             logger.error(f"❌ 生成有效前沿图失败: {e}")
             raise
     
-    def plot_portfolio_weights(self, weights: np.ndarray, 
+    def plot_portfolio_weights(self, weights: np.ndarray,
                              etf_codes: List[str],
+                             etf_names: dict = None,
                              save_path: str = None) -> None:
         """
         绘制权重饼图
-        
+
         Args:
             weights: 权重向量
             etf_codes: ETF代码列表
+            etf_names: ETF代码到中文名称的映射字典
             save_path: 保存路径，默认为None
         """
         logger.info("🥧 生成权重饼图...")
@@ -174,6 +180,12 @@ class Visualizer:
             non_zero_indices = weights > 0.001  # 忽略小于0.1%的权重
             plot_weights = weights[non_zero_indices]
             plot_codes = [etf_codes[i] for i in range(len(etf_codes)) if non_zero_indices[i]]
+
+            # 创建显示标签：中文名称（代码）
+            plot_labels = []
+            for code in plot_codes:
+                display_name = etf_names.get(code, code) if etf_names else code
+                plot_labels.append(f'{display_name}\n({code})')
             
             if len(plot_weights) == 0:
                 logger.warning("⚠️ 没有有效的权重数据可绘制")
@@ -187,8 +199,8 @@ class Visualizer:
             
             # 绘制饼图
             wedges, texts, autotexts = plt.pie(
-                plot_weights, 
-                labels=plot_codes,
+                plot_weights,
+                labels=plot_labels,
                 autopct='%1.1f%%',
                 startangle=90,
                 colors=colors,
@@ -283,10 +295,11 @@ class Visualizer:
                           returns_list: List[float],
                           optimal_risk: float,
                           optimal_return: float,
-                          portfolio_returns: pd.Series) -> None:
+                          portfolio_returns: pd.Series,
+                          etf_names: dict = None) -> None:
         """
         生成所有图表
-        
+
         Args:
             returns: 各ETF日收益率DataFrame
             optimal_weights: 最优权重向量
@@ -296,28 +309,29 @@ class Visualizer:
             optimal_risk: 最优组合风险
             optimal_return: 最优组合收益
             portfolio_returns: 投资组合日收益率序列
+            etf_names: ETF代码到中文名称的映射字典
         """
         logger.info("🎨 开始生成所有可视化图表...")
         
         try:
             # 1. 累计收益对比图
             self.plot_cumulative_returns(
-                returns, optimal_weights, 
+                returns, optimal_weights, etf_names,
                 'cumulative_returns.png'
             )
-            
+
             # 2. 有效前沿图
             self.plot_efficient_frontier(
                 risks, returns_list, optimal_risk, optimal_return,
                 'efficient_frontier.png'
             )
-            
+
             # 3. 权重饼图
             self.plot_portfolio_weights(
-                optimal_weights, etf_codes,
+                optimal_weights, etf_codes, etf_names,
                 'portfolio_weights.png'
             )
-            
+
             # 4. 收益率分布图
             self.plot_returns_distribution(
                 portfolio_returns,

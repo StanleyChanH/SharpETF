@@ -277,16 +277,18 @@ class PortfolioEvaluator:
         
         return summary
     
-    def print_evaluation_report(self, metrics: Dict[str, float], 
+    def print_evaluation_report(self, metrics: Dict[str, float],
                               optimal_weights: np.ndarray,
-                              etf_codes: list) -> None:
+                              etf_codes: list,
+                              etf_names: dict = None) -> None:
         """
         打印评估报告
-        
+
         Args:
             metrics: 评估指标字典
             optimal_weights: 最优权重向量
             etf_codes: ETF代码列表
+            etf_names: ETF代码到中文名称的映射字典
         """
         print("\n" + "="*50)
         print("📊 投资组合评估报告")
@@ -308,7 +310,9 @@ class PortfolioEvaluator:
         
         print(f"\n⚖️ 最优权重分配:")
         for etf, weight in zip(etf_codes, optimal_weights):
-            print(f"  {etf}: {weight:.2%}")
+            if weight > 0.001:  # 只显示权重大于0.1%的ETF
+                display_name = etf_names.get(etf, etf) if etf_names else etf
+                print(f"  {display_name} ({etf}): {weight:.2%}")
         
         print(f"\n📅 参数设置:")
         print(f"  无风险利率: {self.risk_free_rate:.2%}")

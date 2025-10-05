@@ -653,20 +653,21 @@ class HTMLReportGenerator:
         """
 
     def _generate_portfolio_section(self, optimal_weights: List[float], etf_codes: List[str],
-                                  annual_mean: Dict[str, float], cov_matrix: Dict[str, Dict[str, float]]) -> str:
+                                  annual_mean: Dict[str, float], etf_names: Dict[str, str]) -> str:
         """生成投资组合配置部分"""
 
         weights_table = ""
         for etf, weight in zip(etf_codes, optimal_weights):
             if weight > 0.001:
                 expected_return = annual_mean.get(etf, 0)
-                volatility = (cov_matrix.get(etf, {}).get(etf, 0) ** 0.5) if cov_matrix.get(etf) else 0
+                # 获取ETF中文名称，如果没有则使用代码
+                display_name = etf_names.get(etf, etf) if etf_names else etf
                 weights_table += f"""
                 <tr>
-                    <td>{etf}</td>
+                    <td>{display_name}<br><small style="color: #666;">({etf})</small></td>
                     <td>{weight:.2%}</td>
                     <td>{expected_return:.2%}</td>
-                    <td>{volatility:.2%}</td>
+                    <td>-</td>
                     <td>
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: {weight * 100}%"></div>
@@ -683,7 +684,7 @@ class HTMLReportGenerator:
                 <table>
                     <thead>
                         <tr>
-                            <th>ETF代码</th>
+                            <th>ETF名称</th>
                             <th>权重</th>
                             <th>预期年化收益</th>
                             <th>年化波动率</th>
@@ -716,7 +717,8 @@ class HTMLReportGenerator:
         </div>
         """
 
-    def _generate_correlation_section(self, correlation_analysis: Optional[Dict[str, Any]] = None) -> str:
+    def _generate_correlation_section(self, correlation_analysis: Optional[Dict[str, Any]] = None,
+                                  etf_names: Optional[Dict[str, str]] = None) -> str:
         """生成相关性分析部分"""
         if not correlation_analysis:
             return """
@@ -751,8 +753,8 @@ class HTMLReportGenerator:
                 <table>
                     <thead>
                         <tr>
-                            <th>ETF代码1</th>
-                            <th>ETF代码2</th>
+                            <th>ETF名称1</th>
+                            <th>ETF名称2</th>
                             <th>相关系数</th>
                             <th>风险等级</th>
                         </tr>
@@ -760,10 +762,16 @@ class HTMLReportGenerator:
                     <tbody>
             """
             for pair in risk_analysis.get('high_correlation_pairs', []):
+                etf1 = pair.get('etf1', '')
+                etf2 = pair.get('etf2', '')
+                # 获取ETF中文名称
+                etf1_name = etf_names.get(etf1, etf1) if etf_names else etf1
+                etf2_name = etf_names.get(etf2, etf2) if etf_names else etf2
+
                 high_corr_table += f"""
                         <tr>
-                            <td>{pair.get('etf1', '')}</td>
-                            <td>{pair.get('etf2', '')}</td>
+                            <td>{etf1_name}<br><small style="color: #666;">({etf1})</small></td>
+                            <td>{etf2_name}<br><small style="color: #666;">({etf2})</small></td>
                             <td>{pair.get('correlation', 0):.3f}</td>
                             <td><span class="risk-indicator {risk_class}">{pair.get('risk_level', '')}</span></td>
                         </tr>
@@ -1034,7 +1042,8 @@ class HTMLReportGenerator:
                            performance_metrics: Dict[str, Any],
                            risk_report: Optional[Dict[str, Any]] = None,
                            investment_analysis: Optional[Dict[str, Any]] = None,
-                           correlation_analysis: Optional[Dict[str, Any]] = None) -> str:
+                           correlation_analysis: Optional[Dict[str, Any]] = None,
+                           etf_names: Optional[Dict[str, str]] = None) -> str:
         """
         生成完整的HTML报告
 
@@ -1045,6 +1054,7 @@ class HTMLReportGenerator:
             risk_report: 风险分析报告（可选）
             investment_analysis: 投资分析（可选）
             correlation_analysis: 相关性分析（可选）
+            etf_names: ETF代码到中文名称的映射字典（可选）
 
         Returns:
             生成的HTML文件路径
@@ -1075,8 +1085,8 @@ class HTMLReportGenerator:
                         {self._generate_performance_section(performance_metrics)}
                         {self._generate_portfolio_section(optimal_weights, etf_codes,
                                                         optimization_results.get('data_summary', {}).get('etf_annual_returns', {}),
-                                                        {})}
-                        {self._generate_correlation_section(correlation_analysis)}
+                                                        etf_names or {})}
+                        {self._generate_correlation_section(correlation_analysis, etf_names)}
                         {self._generate_risk_section(risk_report)}
                         {self._generate_charts_section(correlation_analysis)}
                         {self._generate_recommendations_section(investment_analysis)}

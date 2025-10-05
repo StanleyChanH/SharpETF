@@ -124,6 +124,9 @@ class InvestmentCalculator:
             success_count = sum(1 for value in final_values if value >= target_value)
             success_probabilities[f'{multiplier}x'] = success_count / simulations
 
+        # 计算翻倍成功率（>100%收益）
+        breakeven_success = sum(1 for value in final_values if value >= self.initial_capital * 2.0)
+
         return {
             'initial_capital': self.initial_capital,
             'annual_return': annual_return,
@@ -139,6 +142,7 @@ class InvestmentCalculator:
             },
             'final_value_percentiles': dict(zip(percentiles, final_percentiles)),
             'success_probabilities': success_probabilities,
+            'success_probability': breakeven_success / simulations,  # 翻倍成功率
             'all_paths': all_paths
         }
 
