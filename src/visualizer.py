@@ -162,6 +162,14 @@ class Visualizer:
         logger.info("🥧 生成权重饼图...")
         
         try:
+            # 确保权重数组和ETF代码列表长度匹配
+            if len(weights) != len(etf_codes):
+                logger.warning(f"⚠️ 权重数组长度({len(weights)})与ETF代码列表长度({len(etf_codes)})不匹配")
+                # 使用较短的长度来避免索引越界
+                min_length = min(len(weights), len(etf_codes))
+                weights = weights[:min_length]
+                etf_codes = etf_codes[:min_length]
+
             # 过滤掉权重为0的ETF
             non_zero_indices = weights > 0.001  # 忽略小于0.1%的权重
             plot_weights = weights[non_zero_indices]
