@@ -3,10 +3,11 @@
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tushare](https://img.shields.io/badge/data-Tushare-orange.svg)](https://tushare.pro)
+[![Enhanced](https://img.shields.io/badge/version-2.1.0--enhanced-brightgreen.svg)]()
 
 > 专业级ETF投资组合优化工具，提供全方位的量化投资决策支持
 
-基于Tushare API的智能投资组合优化系统，通过先进的量化算法帮助投资者构建最优ETF投资组合，实现风险调整收益最大化。
+基于Tushare API的智能投资组合优化系统，通过先进的量化算法帮助投资者构建最优ETF投资组合，实现风险调整收益最大化。支持ETF中文名称显示、复杂增长预测、详细HTML报告生成。
 
 ## ✨ 核心特色
 
@@ -15,18 +16,24 @@
 - **高级风险管理** - VaR/CVaR计算、压力测试、集中度分析
 - **动态再平衡** - 智能再平衡策略和交易成本优化
 - **实用投资工具** - 增长预测、定投计算、业绩归因分析
+- **🆕 增强功能** - ETF中文名称显示、复杂增长预测、详细HTML报告
+- **🆕 相关性分析** - 投资组合相关性风险评估和分散化评分
 
 ### 📊 全方位评估体系
 - **基础指标** - 年化收益率、波动率、夏普比率、最大回撤
 - **高级指标** - Calmar比率、索提诺比率、偏度、峰度
 - **风险指标** - VaR(95%/99%)、CVaR、HHI集中度指数
 - **实用指标** - 再平衡建议、投资增长预测
+- **🆕 概率分布** - 分位数分析、多年度表现预测
+- **🆕 情景分析** - 牛市/熊市/高波动/低波动情景模拟
 
 ### 🎨 专业可视化
 - 累计收益对比图
 - 有效前沿图
 - 投资组合权重饼图
 - 收益率分布直方图
+- **🆕 专业HTML报告** - 包含完整分析结果和投资建议的综合报告
+- **🆕 ETF中文名称** - 所有输出支持ETF中文名称显示
 
 #### 📊 可视化图表展示
 
@@ -65,6 +72,48 @@ conda activate sharpetf
 
 # 安装依赖
 pip install -r requirements.txt
+```
+
+### 📋 使用示例
+
+#### 基础使用
+```bash
+# 运行完整分析
+python main.py
+
+# 输出文件
+├── outputs/
+│   ├── etf_optimization_report.html    # 🆕 专业HTML报告
+│   ├── cumulative_returns.png          # 累计收益对比图
+│   ├── efficient_frontier.png          # 有效前沿图
+│   ├── portfolio_weights.png           # 权重饼图
+│   ├── returns_distribution.png        # 收益率分布图
+│   └── optimization_results.json       # 详细数据
+```
+
+#### 🆕 查看HTML报告
+```bash
+# 在浏览器中打开HTML报告
+# 推荐使用Chrome或Firefox浏览器获得最佳体验
+open outputs/etf_optimization_report.html
+```
+
+#### 自定义配置
+```json
+{
+    "tushare_token": "your_token_here",
+    "etf_codes": [
+        "513500.SH",  // 标普500ETF
+        "159941.SZ",  // 纳指ETF
+        "512500.SH",  // 中证500ETF
+        "516160.SH"   // 新能源ETF
+    ],
+    "start_date": "20240101",
+    "end_date": "20241201",
+    "risk_free_rate": 0.02,
+    "trading_days": 252,
+    "output_dir": "outputs"
+}
 ```
 
 ### 2. 配置Tushare Token
@@ -108,17 +157,19 @@ python main.py
 SharpETF/
 ├── src/                                    # 源代码目录
 │   ├── config.py                           # 配置管理
-│   ├── data_fetcher.py                     # 数据获取模块
+│   ├── data_fetcher.py                     # 数据获取模块（支持ETF中文名称）
 │   ├── data_processor.py                   # 数据处理模块
 │   ├── portfolio_optimizer.py              # 基础优化模块
 │   ├── portfolio_optimizer_scipy.py        # SciPy优化引擎
 │   ├── evaluator.py                        # 评估指标模块
-│   ├── visualizer.py                       # 可视化模块
+│   ├── visualizer.py                       # 可视化模块（支持中文显示）
 │   ├── utils.py                            # 工具函数模块
-│   ├── risk_manager.py                     # 🆕 高级风险管理
-│   ├── rebalancing_engine.py               # 🆕 动态再平衡引擎
-│   ├── multi_objective_optimizer.py        # 🆕 多目标优化器
-│   └── investment_tools.py                 # 🆕 实用投资工具
+│   ├── risk_manager.py                     # 高级风险管理
+│   ├── rebalancing_engine.py               # 动态再平衡引擎
+│   ├── multi_objective_optimizer.py        # 多目标优化器
+│   ├── investment_tools.py                 # 实用投资工具（复杂增长预测）
+│   ├── html_report_generator.py            # 🆕 专业HTML报告生成器
+│   └── correlation_analyzer.py             # 🆕 相关性分析模块
 ├── main.py                                 # 主执行脚本
 ├── config.json.example                     # 配置文件模板
 ├── requirements.txt                        # 依赖库列表
@@ -130,7 +181,8 @@ SharpETF/
     ├── efficient_frontier.png
     ├── portfolio_weights.png
     ├── returns_distribution.png
-    └── optimization_results.json
+    ├── optimization_results.json
+    └── etf_optimization_report.html         # 🆕 专业HTML分析报告
 ```
 
 ## 🎯 系统功能详解
@@ -178,12 +230,24 @@ SharpETF/
 
 ### 4. 实用投资工具
 
-#### 投资增长预测
+#### 🆕 复杂增长预测系统
 ```python
-# 5年期预测 (100万初始投资)
-• 平均预期价值: 1,950万元
-• 中位数价值: 1,900万元
-• 成功概率 (翻倍): 85%
+# 5年期预测 (100万初始投资) - 基于Monte Carlo模拟
+• 平均预期价值: 2,446万元
+• 中位数价值: 1,919万元
+• 概率分布:
+  - 10%分位数（最差10%）: 85.5万元
+  - 75%分位数: 3,445万元
+  - 90%分位数（最优10%）: 5,201万元
+• 多年度表现:
+  - 第1年平均价值: 189万元
+  - 第2年平均价值: 356万元
+  - 第3年平均价值: 646万元
+• 情景分析:
+  - 牛市情景成功率: 100.0%
+  - 熊市情景成功率: 99.9%
+  - 高波动情景成功率: 100.0%
+  - 低波动情景成功率: 100.0%
 ```
 
 #### 定投计算器
@@ -192,6 +256,47 @@ SharpETF/
 • 总投入: 60万元
 • 预期价值: 120万元
 • 年化收益: 8.5%
+```
+
+#### 🆕 ETF中文名称支持
+- 自动获取ETF中文名称并缓存
+- 所有报告和图表显示中文ETF名称
+- 支持ETF代码与名称的对应查询
+
+#### 🆕 专业HTML报告系统
+```python
+# HTML报告包含的主要内容
+📊 投资组合概览
+  - 基础配置信息
+  - 最优权重分配（中文名称显示）
+  - 核心绩效指标
+
+🔄 多目标优化比较
+  - 四种优化策略对比
+  - 风险收益特征分析
+  - 策略适用性建议
+
+🔒 高级风险分析
+  - 综合风险评级
+  - VaR/CVaR风险指标
+  - 集中度风险分析
+
+🔗 相关性分析
+  - 相关性风险评估
+  - 分散化评分
+  - 高相关性ETF对识别
+
+📈 增长预测分析
+  - 基础统计指标
+  - 概率分布分析
+  - 多目标成功率
+  - 风险指标评估
+  - 情景分析（牛市/熊市/高波动/低波动）
+  - 分年度表现预测
+
+💡 投资建议
+  - 个性化投资建议
+  - 风险提示和策略推荐
 ```
 
 ## 📊 输出示例
@@ -223,19 +328,44 @@ SharpETF/
   2. 当前风险水平适中，适合积极型投资者
   3. 建议每季度进行一次再平衡
 
+🔗 相关性分析:
+  • 相关性风险等级: 高风险
+  • 分散化评分: 70.4/100
+  • 平均相关性: 0.286
+  • 高相关性ETF对: 4对
+
 📈 5年增长预测 (100万初始投资):
-  • 平均预期价值: 19,462万元
-  • 中位数价值: 19,010万元
+  • 平均预期价值: 2,446万元
+  • 中位数价值: 1,919万元
+
+📊 专业HTML报告:
+  • 详细增长预测分析
+  • 完整风险评估
+  • 情景分析和概率分布
+  • 投资建议和策略推荐
 ```
 
-### 📊 实际输出图表展示
+### 📊 输出文件说明
 
-以下是系统运行生成的实际可视化图表：
+#### 可视化图表
+- **累计收益对比图** (`cumulative_returns.png`) - 各ETF与最优组合的收益对比
+- **有效前沿图** (`efficient_frontier.png`) - 风险收益边界和最优组合位置
+- **投资组合权重饼图** (`portfolio_weights.png`) - ETF权重分配可视化
+- **收益率分布直方图** (`returns_distribution.png`) - 收益率分布特征分析
 
-![累计收益对比图](assets/images/cumulative_returns.png)
-![有效前沿图](assets/images/efficient_frontier.png)
-![投资组合权重饼图](assets/images/portfolio_weights.png)
-![收益率分布直方图](assets/images/returns_distribution.png)
+#### 🆕 专业HTML报告
+- **etf_optimization_report.html** - 包含完整分析结果的综合报告:
+  - 基础绩效指标分析
+  - 多目标优化比较
+  - 高级风险评估
+  - 相关性分析结果
+  - 详细增长预测（概率分布、情景分析、分年度表现）
+  - 投资建议和策略推荐
+  - 交互式图表和响应式设计
+
+#### 数据文件
+- **optimization_results.json** - 详细的分析数据（JSON格式）
+- **etf_optimizer.log** - 系统运行日志
 
 ## 🔧 高级配置
 
@@ -346,7 +476,18 @@ A: 系统基于历史数据和量化模型生成建议，仅供参考。投资�
 
 ## 📊 更新日志
 
-### v2.0.0 (2024-12-01) - 重大更新
+### v2.1.0 (2025-10-05) - 增强功能更新
+- ✨ **ETF中文名称支持** - 自动获取并显示ETF中文名称
+- ✨ **复杂增长预测系统** - 基于Monte Carlo模拟的详细增长预测
+- ✨ **专业HTML报告生成** - 包含完整分析结果的综合HTML报告
+- ✨ **相关性分析模块** - 投资组合相关性风险评估和分散化评分
+- ✨ **概率分布分析** - 分位数分析和多年度表现预测
+- ✨ **情景分析功能** - 牛市/熊市/高波动/低波动情景模拟
+- 🐛 修复增长预测中的数值错误和数组维度问题
+- 🔧 优化算法稳定性和数值计算精度
+- 📊 增强HTML报告的交互性和可视化效果
+
+### v2.0.0 (2025-10-03) - 重大更新
 - ✨ 新增多目标优化引擎
 - ✨ 增加高级风险管理模块
 - ✨ 实现动态再平衡策略
@@ -356,7 +497,7 @@ A: 系统基于历史数据和量化模型生成建议，仅供参考。投资�
 - 🐛 修复已知问题
 - ⚡ 性能大幅提升
 
-### v1.0.0 (2024-06-01)
+### v1.0.0 (2025-10-01)
 - 🎉 初始版本发布
 - 📊 基础夏普比率优化
 - 📈 有效前沿计算
