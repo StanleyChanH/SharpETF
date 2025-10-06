@@ -560,7 +560,7 @@ class EnhancedETFSharpeOptimizer:
                 prices = self.raw_data[['trade_date'] + price_columns].set_index('trade_date')
 
                 # 直接使用简化量化指标版本
-                self.enhanced_signals = self.simple_quant_signals.generate_composite_signals(
+                self.enhanced_signals = self.simple_quant_signals.generate_signals(
                     self.returns, prices
                 )
                 if self.enhanced_signals:
@@ -613,7 +613,7 @@ class EnhancedETFSharpeOptimizer:
                                 print(f"    {emoji} {etf_name}: {signal_value:.2f}")
 
                     # 计算信号表现
-                    signal_performance = self.advanced_quant_indicators.calculate_signal_performance(
+                    signal_performance = self.quant_signals._calculate_signal_performance(
                         self.enhanced_signals, self.returns
                     )
 

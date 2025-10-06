@@ -8,7 +8,7 @@ import numpy as np
 from scipy.optimize import minimize
 from typing import Dict, List, Tuple, Optional, Any
 import logging
-from .advanced_quant_indicators import AdvancedQuantIndicators
+from .quant_signals import QuantSignals
 from .evaluator import PortfolioEvaluator
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class EnhancedPortfolioOptimizer:
         """
         self.risk_free_rate = risk_free_rate
         self.trading_days = trading_days
-        self.quant_indicators = AdvancedQuantIndicators(trading_days)
+        self.quant_indicators = QuantSignals(trading_days, mode='advanced')
         self.evaluator = PortfolioEvaluator(trading_days, risk_free_rate)
 
     def optimize_with_enhanced_signals(self, returns: pd.DataFrame,
@@ -413,7 +413,7 @@ class EnhancedPortfolioOptimizer:
 
         try:
             # 生成增强信号
-            signals = self.quant_indicators.generate_enhanced_signals(returns, prices)
+            signals = self.quant_indicators.generate_signals(returns, prices)
 
             # 传统优化
             annual_mean_traditional = returns.mean() * self.trading_days
