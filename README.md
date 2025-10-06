@@ -3,9 +3,6 @@
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tushare](https://img.shields.io/badge/data-Tushare-orange.svg)](https://tushare.pro)
-[![Version](https://img.shields.io/badge/version-2.3.0--refactored-brightgreen.svg)]()
-[![Code Size](https://img.shields.io/badge/code%20size-9.6k-blue.svg)]()
-[![Files](https://img.shields.io/badge/files-19-green.svg)]()
 
 > 🔬 专业级ETF投资组合优化工具，提供全方位的量化投资决策支持
 
