@@ -69,7 +69,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-username/SharpETF.git
+git clone https://github.com/StanleyChanH/SharpETF.git
 cd SharpETF
 
 # 创建conda环境（推荐）
