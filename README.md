@@ -3,13 +3,23 @@
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tushare](https://img.shields.io/badge/data-Tushare-orange.svg)](https://tushare.pro)
-[![Enhanced](https://img.shields.io/badge/version-2.3.0--refactored--brightgreen.svg)]()
+[![Version](https://img.shields.io/badge/version-2.3.0--refactored-brightgreen.svg)]()
+[![Code Size](https://img.shields.io/badge/code%20size-9.6k-blue.svg)]()
+[![Files](https://img.shields.io/badge/files-19-green.svg)]()
 
-> 专业级ETF投资组合优化工具，提供全方位的量化投资决策支持
+> 🔬 专业级ETF投资组合优化工具，提供全方位的量化投资决策支持
 
-基于Tushare API的智能投资组合优化系统，通过先进的量化算法帮助投资者构建最优ETF投资组合，实现风险调整收益最大化。支持ETF中文名称显示、复杂增长预测、详细HTML报告生成。
+基于Tushare API的智能投资组合优化系统，通过先进的量化算法帮助投资者构建最优ETF投资组合，实现风险调整收益最大化。采用统一优化引擎，支持智能后端选择，提供ETF中文名称显示、复杂增长预测、专业HTML报告生成。
 
-## ✨ 核心特色
+## ✨ 项目特色
+
+- 🏆 **统一优化引擎** - 智能选择CVXPY/SciPy后端，自动降级机制
+- 📊 **多维度量化分析** - 动量、波动率、趋势、质量等综合信号
+- 🛡️ **高级风险管理** - VaR/CVaR计算、压力测试、集中度分析
+- 📈 **专业可视化** - 交互式图表和HTML报告
+- 🌍 **中文友好** - 完整的中文显示和ETF名称支持
+- 🔧 **代码重构优化** - 消除重复代码，提升可维护性
+- 📚 **完善文档** - 详细的使用指南和技术文档
 
 ### 🎯 专业量化分析
 - **统一优化引擎** - 支持CVXPY和SciPy后端，自动选择最优计算方式
@@ -575,21 +585,38 @@ A: 系统基于历史数据和量化模型生成建议，仅供参考。投资�
 
 ## 🤝 贡献指南
 
-我们欢迎各种形式的贡献！
+我们欢迎所有形式的贡献！请查看 [贡献指南](CONTRIBUTING.md) 了解详细信息。
 
-### 如何贡献
-1. Fork 本项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
+### 🚀 快速贡献
+```bash
+# 1. Fork 项目并克隆
+git clone https://github.com/YOUR_USERNAME/SharpETF.git
+cd SharpETF
 
-### 贡献方向
-- 🐛 Bug修复
-- ✨ 新功能开发
-- 📚 文档改进
-- 🧪 测试用例
-- 🔧 性能优化
+# 2. 创建功能分支
+git checkout -b feature/amazing-feature
+
+# 3. 开发和测试
+python main.py  # 确保功能正常
+
+# 4. 提交更改
+git commit -m "feat: add amazing feature"
+
+# 5. 推送并创建 Pull Request
+git push origin feature/amazing-feature
+```
+
+### 📋 贡献类型
+- 🐛 **Bug修复** - 修复已知问题和错误
+- ✨ **新功能** - 开发新的量化指标和优化策略
+- 📚 **文档改进** - 更新文档、添加示例和教程
+- 🧪 **测试用例** - 增加测试覆盖率和边界测试
+- 🔧 **性能优化** - 提升算法效率和代码质量
+
+### 📖 相关资源
+- [贡献指南](CONTRIBUTING.md) - 详细的贡献流程
+- [行为准则](CODE_OF_CONDUCT.md) - 社区行为规范
+- [项目架构](CLAUDE.md) - 技术架构说明
 
 ## 📊 更新日志
 
@@ -646,6 +673,27 @@ A: 系统基于历史数据和量化模型生成建议，仅供参考。投资�
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
 
+## 📞 联系我们
+
+### 🐛 报告问题
+- **Bug报告**: [GitHub Issues](https://github.com/StanleyChanH/SharpETF/issues)
+- **功能请求**: [GitHub Discussions](https://github.com/StanleyChanH/SharpETF/discussions)
+- **安全问题**: 请通过私有邮件报告
+
+### 📖 技术支持
+- **使用指南**: [ENHANCED_USAGE_GUIDE.md](ENHANCED_USAGE_GUIDE.md)
+- **项目架构**: [CLAUDE.md](CLAUDE.md)
+- **贡献指南**: [CONTRIBUTING.md](CONTRIBUTING.md)
+
+### 👨‍💻 作者信息
+- **项目维护者**: [StanleyChanH](https://github.com/StanleyChanH)
+- **项目主页**: [SharpETF](https://github.com/StanleyChanH/SharpETF)
+
+### 🌟 社区
+- **Star本项目**: 如果觉得有用，请给个⭐️
+- **分享项目**: 帮助更多投资者发现这个工具
+- **贡献代码**: 欢迎提交Pull Request
+
 ## 🙏 致谢
 
 - [Tushare](https://tushare.pro) - 提供高质量的金融数据服务
@@ -663,8 +711,32 @@ A: 系统基于历史数据和量化模型生成建议，仅供参考。投资�
 
 <div align="center">
 
-**免责声明**: 本系统仅供研究和学习使用，不构成投资建议。投资有风险，决策需谨慎。
+**⚠️ 免责声明**: 本系统仅供研究和学习使用，不构成投资建议。投资有风险，决策需谨慎。
 
-Made with ❤️ by [StanleyChanH]
+<div align="center">
+
+**🌟 如果这个项目对您有帮助，请给个Star支持我们的开发！**
+
+[![GitHub stars](https://img.shields.io/github/stars/StanleyChanH/SharpETF.svg?style=social&label=Star)](https://github.com/StanleyChanH/SharpETF)
+
+Made with ❤️ by [StanleyChanH](https://github.com/StanleyChanH)
+
+</div>
+
+### 📊 项目统计
+
+![GitHub forks](https://img.shields.io/github/forks/StanleyChanH/SharpETF.svg?style=social&label=Fork)](https://github.com/StanleyChanH/SharpETF/network/members)
+![GitHub issues](https://img.shields.io/github/issues/StanleyChanH/SharpETF.svg)](https://github.com/StanleyChanH/SharpETF/issues)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/StanleyChanH/SharpETF.svg)](https://github.com/StanleyChanH/SharpETF/pulls)
+
+---
+
+<div align="center">
+
+**🎯 关注更多量化投资内容**
+
+[量化投资 | ETF投资 | Python量化 | 投资组合优化 | 夏普比率]
+
+</div>
 
 </div>
