@@ -1,5 +1,9 @@
 # 🚀 增强版ETF投资组合优化系统
 
+<div align="center">
+  <img src="assets/icon.png" alt="SharpETF Logo" width="200" height="200">
+</div>
+
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tushare](https://img.shields.io/badge/data-Tushare-orange.svg)](https://tushare.pro)
@@ -17,6 +21,7 @@
 - 🌍 **中文友好** - 完整的中文显示和ETF名称支持
 - 🔧 **代码重构优化** - 消除重复代码，提升可维护性
 - 📚 **完善文档** - 详细的使用指南和技术文档
+- 🎨 **专业界面** - 精美的HTML报告和可视化图表
 
 ### 🎯 专业量化分析
 - **统一优化引擎** - 支持CVXPY和SciPy后端，自动选择最优计算方式
@@ -48,7 +53,21 @@
 - **🆕 专业HTML报告** - 包含完整分析结果和投资建议的综合报告
 - **🆕 ETF中文名称** - 所有输出支持ETF中文名称显示
 
-#### 📊 可视化图表展示
+## 🖼️ 项目展示
+
+<div align="center">
+
+### 📊 项目图标与核心功能
+<div align="center">
+  <img src="assets/icon.png" alt="SharpETF Logo" width="120" height="120">
+  <p><em>SharpETF - 专业级ETF投资组合优化系统</em></p>
+</div>
+
+</div>
+
+> 💡 **项目特色**: 采用统一优化引擎，支持智能后端选择，提供完整的中英文界面和专业量化分析。
+
+#### 📊 详细可视化图表展示
 
 **1. 累计收益对比图**
 ![累计收益对比图](assets/images/cumulative_returns.png)
@@ -165,6 +184,18 @@ python main.py
 ```
 
 ## 📁 项目架构 (v2.3.0 重构优化)
+
+<div align="center">
+
+### 🏗️ 系统架构概览
+
+<div align="center">
+  <img src="assets/icon.png" alt="SharpETF Architecture" width="80" height="80">
+</div>
+
+**模块化设计 · 统一优化引擎 · 智能后端选择**
+
+</div>
 
 ```
 SharpETF/
