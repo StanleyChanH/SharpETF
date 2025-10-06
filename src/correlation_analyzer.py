@@ -11,10 +11,11 @@ from typing import Dict, List, Tuple, Any, Optional
 import logging
 import os
 
+# 导入字体配置
+from src.font_config import setup_chinese_font
+
 # 设置中文字体
-plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK JP', 'WenQuanYi Micro Hei', 'SimHei']
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['axes.unicode_minus'] = False
+setup_chinese_font()
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +212,10 @@ class CorrelationAnalyzer:
         logger.info("🔥 生成相关性热力图...")
 
         try:
+            # 强制设置中文字体
+            from matplotlib.font_manager import FontProperties
+            chinese_font = FontProperties(family='AR PL UMing CN')
+
             plt.figure(figsize=(12, 10))
 
             # 创建热力图
@@ -232,9 +237,9 @@ class CorrelationAnalyzer:
                 annot_kws={'size': 10}
             )
 
-            plt.title('ETF相关性矩阵热力图', fontsize=16, fontweight='bold', pad=20)
-            plt.xlabel('ETF代码', fontsize=12)
-            plt.ylabel('ETF代码', fontsize=12)
+            plt.title('ETF相关性矩阵热力图', fontsize=16, fontweight='bold', pad=20, fontproperties=chinese_font)
+            plt.xlabel('ETF代码', fontsize=12, fontproperties=chinese_font)
+            plt.ylabel('ETF代码', fontsize=12, fontproperties=chinese_font)
             plt.xticks(rotation=45, ha='right')
             plt.yticks(rotation=0)
 

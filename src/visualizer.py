@@ -10,10 +10,11 @@ from typing import List, Tuple
 import os
 import logging
 
-# 设置中文字体为 Noto Sans CJK SC（思源黑体 简体中文）
-plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK JP', 'WenQuanYi Micro Hei', 'SimHei']
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['axes.unicode_minus'] = False
+# 导入字体配置
+from src.font_config import setup_chinese_font
+
+# 设置中文字体
+setup_chinese_font()
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +50,18 @@ class Visualizer:
             save_path: 保存路径，默认为None
         """
         logger.info("📈 生成累计收益对比图...")
-        
+
         try:
+            # 强制设置中文字体
+            from matplotlib.font_manager import FontProperties
+            chinese_font = FontProperties(family='AR PL UMing CN')
+
             # 计算投资组合收益率
             portfolio_returns = (returns * optimal_weights).sum(axis=1)
-            
+
             # 计算累计收益
             portfolio_cumulative = (1 + portfolio_returns).cumprod()
-            
+
             # 创建图表
             plt.figure(figsize=(12, 8))
             
@@ -73,12 +78,12 @@ class Visualizer:
                     label='最优组合', linewidth=3, color='black')
             
             # 设置图表属性
-            plt.title('累计收益对比', fontsize=16, fontweight='bold')
-            plt.xlabel('日期', fontsize=12)
-            plt.ylabel('累计收益倍数', fontsize=12)
-            plt.legend(loc='best', fontsize=10)
+            plt.title('累计收益对比', fontsize=16, fontweight='bold', fontproperties=chinese_font)
+            plt.xlabel('日期', fontsize=12, fontproperties=chinese_font)
+            plt.ylabel('累计收益倍数', fontsize=12, fontproperties=chinese_font)
+            plt.legend(loc='best', fontsize=10, prop=chinese_font)
             plt.grid(True, alpha=0.3)
-            
+
             # 设置y轴格式
             plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{x:.1f}x'))
             
@@ -115,8 +120,12 @@ class Visualizer:
             save_path: 保存路径，默认为None
         """
         logger.info("📊 生成有效前沿图...")
-        
+
         try:
+            # 强制设置中文字体
+            from matplotlib.font_manager import FontProperties
+            chinese_font = FontProperties(family='AR PL UMing CN')
+
             plt.figure(figsize=(10, 8))
             
             # 绘制有效前沿
@@ -128,10 +137,10 @@ class Visualizer:
                        label='最优组合（最大夏普比率）')
             
             # 设置图表属性
-            plt.title('有效前沿', fontsize=16, fontweight='bold')
-            plt.xlabel('年化波动率', fontsize=12)
-            plt.ylabel('年化收益率', fontsize=12)
-            plt.legend(loc='best', fontsize=10)
+            plt.title('有效前沿', fontsize=16, fontweight='bold', fontproperties=chinese_font)
+            plt.xlabel('年化波动率', fontsize=12, fontproperties=chinese_font)
+            plt.ylabel('年化收益率', fontsize=12, fontproperties=chinese_font)
+            plt.legend(loc='best', fontsize=10, prop=chinese_font)
             plt.grid(True, alpha=0.3)
             
             # 设置坐标轴格式
@@ -166,8 +175,11 @@ class Visualizer:
             save_path: 保存路径，默认为None
         """
         logger.info("🥧 生成权重饼图...")
-        
+
         try:
+            # 强制设置中文字体
+            from matplotlib.font_manager import FontProperties
+            chinese_font = FontProperties(family='AR PL UMing CN')
             # 确保权重数组和ETF代码列表长度匹配
             if len(weights) != len(etf_codes):
                 logger.warning(f"⚠️ 权重数组长度({len(weights)})与ETF代码列表长度({len(etf_codes)})不匹配")
@@ -204,7 +216,7 @@ class Visualizer:
                 autopct='%1.1f%%',
                 startangle=90,
                 colors=colors,
-                textprops={'fontsize': 10}
+                textprops={'fontsize': 10, 'fontproperties': chinese_font}
             )
             
             # 设置百分比文本样式
@@ -212,12 +224,14 @@ class Visualizer:
                 autotext.set_color('white')
                 autotext.set_fontweight('bold')
             
-            plt.title('最优组合权重分配', fontsize=16, fontweight='bold')
-            
+            plt.title('最优组合权重分配', fontsize=16, fontweight='bold', fontproperties=chinese_font)
+
             # 添加图例
-            plt.legend(wedges, [f'{code}: {weight:.2%}' 
+            plt.legend(wedges, [f'{code}: {weight:.2%}'
                               for code, weight in zip(plot_codes, plot_weights)],
                       title="ETF权重",
+                      title_fontproperties=chinese_font,
+                      prop=chinese_font,
                       loc="center left",
                       bbox_to_anchor=(1, 0, 0.5, 1))
             
@@ -245,8 +259,12 @@ class Visualizer:
             save_path: 保存路径，默认为None
         """
         logger.info("📊 生成收益率分布图...")
-        
+
         try:
+            # 强制设置中文字体
+            from matplotlib.font_manager import FontProperties
+            chinese_font = FontProperties(family='AR PL UMing CN')
+
             plt.figure(figsize=(10, 6))
             
             # 绘制直方图
@@ -265,10 +283,10 @@ class Visualizer:
                     'r-', linewidth=2, label=f'正态分布 (μ={mu:.4f}, σ={std:.4f})')
             
             # 设置图表属性
-            plt.title('投资组合收益率分布', fontsize=16, fontweight='bold')
-            plt.xlabel('日收益率', fontsize=12)
-            plt.ylabel('频数', fontsize=12)
-            plt.legend(fontsize=10)
+            plt.title('投资组合收益率分布', fontsize=16, fontweight='bold', fontproperties=chinese_font)
+            plt.xlabel('日收益率', fontsize=12, fontproperties=chinese_font)
+            plt.ylabel('频数', fontsize=12, fontproperties=chinese_font)
+            plt.legend(fontsize=10, prop=chinese_font)
             plt.grid(True, alpha=0.3)
             
             # 设置x轴格式

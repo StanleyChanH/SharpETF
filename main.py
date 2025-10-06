@@ -14,6 +14,15 @@ import numpy as np
 # 添加src目录到Python路径
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
+# 设置中文字体（尽早设置）
+try:
+    from src.font_config import setup_chinese_font
+    setup_chinese_font()
+except ImportError as e:
+    print(f"⚠️ 字体配置模块导入失败: {e}")
+except Exception as e:
+    print(f"⚠️ 字体设置失败: {e}")
+
 from src.config import get_config
 from src.data_fetcher import get_data_fetcher
 from src.data_processor import get_data_processor
@@ -35,6 +44,15 @@ from src.investment_tools import (
 from src.html_report_generator import get_html_report_generator
 from src.correlation_analyzer import get_correlation_analyzer
 
+# 导入高级量化指标和增强优化器
+from src.advanced_quant_indicators import get_advanced_quant_indicators
+from src.enhanced_portfolio_optimizer import get_enhanced_portfolio_optimizer
+from src.enhanced_visualizer import get_enhanced_visualizer
+
+# 导入简化模块作为备用
+from src.simple_quant_signals import get_simple_quant_signals
+from src.simple_enhanced_optimizer import get_simple_enhanced_optimizer
+
 # 尝试导入优化器，优先使用scipy版本
 try:
     from src.portfolio_optimizer_scipy import get_portfolio_optimizer_scipy as get_portfolio_optimizer
@@ -52,6 +70,7 @@ class EnhancedETFSharpeOptimizer:
 
     def __init__(self):
         """初始化主类"""
+        self.logger = logging.getLogger(__name__)
         self.config = get_config()
         self.data_fetcher = get_data_fetcher()
         self.data_processor = get_data_processor(self.config.trading_days)
@@ -72,6 +91,19 @@ class EnhancedETFSharpeOptimizer:
         self.performance_attribution = get_performance_attribution()
         self.portfolio_analyzer = get_portfolio_analyzer()
 
+        # 初始化高级量化指标模块
+        self.advanced_quant_indicators = get_advanced_quant_indicators(self.config.trading_days)
+        self.enhanced_optimizer = get_enhanced_portfolio_optimizer(
+            self.config.risk_free_rate, self.config.trading_days
+        )
+        self.enhanced_visualizer = get_enhanced_visualizer(self.config.output_dir)
+
+        # 初始化简化模块作为备用
+        self.simple_quant_signals = get_simple_quant_signals(self.config.trading_days)
+        self.simple_enhanced_optimizer = get_simple_enhanced_optimizer(
+            self.config.risk_free_rate, self.config.trading_days
+        )
+
         # 存储中间结果
         self.raw_data = None
         self.etf_names = None  # ETF中文名称映射
@@ -87,10 +119,13 @@ class EnhancedETFSharpeOptimizer:
         self.multi_objective_results = None
         self.investment_analysis = None
         self.correlation_analysis = None
+        self.enhanced_signals = None
+        self.enhanced_optimization_results = None
+        self.enhanced_charts = None
 
         # 记录使用的优化器类型
-        logging.info(f"使用优化器: {OPTIMIZER_TYPE}")
-        logging.info("✅ 增强版ETF优化系统初始化完成")
+        self.logger.info(f"使用优化器: {OPTIMIZER_TYPE}")
+        self.logger.info("✅ 增强版ETF优化系统初始化完成")
     
     def run_analysis(self) -> None:
         """运行完整的增强分析流程"""
@@ -119,28 +154,34 @@ class EnhancedETFSharpeOptimizer:
                 # 7. 再平衡策略分析
                 self._analyze_rebalancing()
 
-                # 8. 投资实用工具分析
+                # 8. 高级量化指标分析
+                self._analyze_enhanced_quant_signals()
+
+                # 9. 增强投资组合优化
+                self._run_enhanced_optimization()
+
+                # 10. 投资实用工具分析（现在有增强策略数据了）
                 self._analyze_investment_tools()
 
-                # 9. 相关性分析
+                # 11. 相关性分析
                 self._analyze_correlations()
 
-                # 10. 生成可视化
+                # 12. 生成可视化
                 self._generate_visualizations()
 
-                # 11. 保存结果
+                # 13. 保存结果
                 self._save_results()
 
-                # 12. 生成HTML报告
+                # 14. 生成HTML报告
                 self._generate_html_report()
 
-                # 13. 打印增强报告
+                # 15. 打印增强报告
                 self._print_enhanced_final_report()
 
-            logging.info("✅ 增强分析完成！")
+            self.logger.info("✅ 增强分析完成！")
 
         except Exception as e:
-            logging.error(f"❌ 分析失败: {e}")
+            self.logger.error(f"❌ 分析失败: {e}")
             sys.exit(1)
     
     def _fetch_data(self) -> None:
@@ -152,8 +193,8 @@ class EnhancedETFSharpeOptimizer:
             # 获取ETF中文名称
             self.etf_names = self.data_fetcher.get_etf_names(self.config.etf_codes)
 
-            logging.info(f"获取到 {len(self.raw_data)} 个交易日数据")
-            logging.info(f"成功获取 {len(self.etf_names)} 个ETF名称信息")
+            self.logger.info(f"获取到 {len(self.raw_data)} 个交易日数据")
+            self.logger.info(f"成功获取 {len(self.etf_names)} 个ETF名称信息")
     
     def _process_data(self) -> None:
         """处理数据"""
@@ -263,7 +304,7 @@ class EnhancedETFSharpeOptimizer:
     def _generate_html_report(self) -> None:
         """生成HTML报告"""
         with Timer("HTML报告生成"):
-            logging.info("📝 开始生成HTML分析报告...")
+            self.logger.info("📝 开始生成HTML分析报告...")
 
             try:
                 # 准备报告数据
@@ -287,27 +328,30 @@ class EnhancedETFSharpeOptimizer:
                     }
                 }
 
-                # 生成HTML报告
-                report_path = self.html_report_generator.generate_html_report(
+                # 生成增强HTML报告
+                report_path = self.html_report_generator.generate_enhanced_html_report(
                     config=config_data,
                     optimization_results=optimization_data,
                     performance_metrics=self.metrics,
                     risk_report=getattr(self, 'risk_report', None),
                     investment_analysis=getattr(self, 'investment_analysis', None),
                     correlation_analysis=getattr(self, 'correlation_analysis', None),
-                    etf_names=self.etf_names
+                    etf_names=self.etf_names,
+                    enhanced_signals=getattr(self, 'enhanced_signals', None),
+                    enhanced_results=getattr(self, 'enhanced_optimization_results', None),
+                    enhanced_charts=getattr(self, 'enhanced_charts', None)
                 )
 
-                logging.info(f"✅ HTML报告生成完成: {report_path}")
+                self.logger.info(f"✅ HTML报告生成完成: {report_path}")
 
             except Exception as e:
-                logging.error(f"❌ HTML报告生成失败: {e}")
+                self.logger.error(f"❌ HTML报告生成失败: {e}")
                 # 不抛出异常，继续执行其他步骤
 
     def _run_multi_objective_optimization(self) -> None:
         """运行多目标优化比较"""
         with Timer("多目标优化分析"):
-            logging.info("🔄 开始多目标优化比较...")
+            self.logger.info("🔄 开始多目标优化比较...")
             self.multi_objective_results = self.multi_objective_optimizer.compare_optimization_methods(
                 self.annual_mean, self.cov_matrix, self.returns
             )
@@ -315,7 +359,7 @@ class EnhancedETFSharpeOptimizer:
     def _analyze_risks(self) -> None:
         """进行高级风险分析"""
         with Timer("高级风险分析"):
-            logging.info("🔒 开始高级风险分析...")
+            self.logger.info("🔒 开始高级风险分析...")
             self.risk_report = self.risk_manager.generate_risk_report(
                 self.portfolio_returns, self.optimal_weights,
                 self.config.etf_codes, self.returns
@@ -324,7 +368,7 @@ class EnhancedETFSharpeOptimizer:
     def _analyze_rebalancing(self) -> None:
         """分析再平衡策略"""
         with Timer("再平衡策略分析"):
-            logging.info("⚖️ 开始再平衡策略分析...")
+            self.logger.info("⚖️ 开始再平衡策略分析...")
             # 模拟当前权重（假设有5%的偏离）
             current_weights = self.optimal_weights + np.random.normal(0, 0.02, len(self.optimal_weights))
             current_weights = np.maximum(current_weights, 0)
@@ -338,16 +382,36 @@ class EnhancedETFSharpeOptimizer:
     def _analyze_investment_tools(self) -> None:
         """分析投资实用工具"""
         with Timer("投资工具分析"):
-            logging.info("💼 开始投资工具分析...")
+            self.logger.info("💼 开始投资工具分析...")
 
-            # 投资增长预测
-            growth_projection = self.investment_calculator.project_portfolio_growth(
+            # 原始策略投资增长预测
+            original_growth_projection = self.investment_calculator.project_portfolio_growth(
                 self.metrics['annual_return'],
                 self.metrics['annual_volatility'],
                 years=5
             )
 
-            # 行业敞口分析
+            # 计算增强策略的投资组合指标和增长预测
+            enhanced_growth_projection = None
+            if (self.enhanced_optimization_results and
+                'enhanced_metrics' in self.enhanced_optimization_results):
+                enhanced_metrics = self.enhanced_optimization_results['enhanced_metrics']
+
+                # 使用增强策略的年化收益率和波动率进行增长预测
+                enhanced_annual_return = enhanced_metrics.get('portfolio_return', self.metrics['annual_return'])
+                enhanced_annual_volatility = enhanced_metrics.get('portfolio_volatility', self.metrics['annual_volatility'])
+
+                try:
+                    enhanced_growth_projection = self.investment_calculator.project_portfolio_growth(
+                        enhanced_annual_return,
+                        enhanced_annual_volatility,
+                        years=5
+                    )
+                except Exception as e:
+                    self.logger.error(f"增强策略增长预测计算失败: {e}")
+                    enhanced_growth_projection = None
+
+            # 行业敞口分析（基于原始策略）
             sector_analysis = self.portfolio_analyzer.analyze_sector_exposure(
                 self.config.etf_codes, self.optimal_weights
             )
@@ -358,7 +422,8 @@ class EnhancedETFSharpeOptimizer:
             )
 
             self.investment_analysis = {
-                'growth_projection': growth_projection,
+                'growth_projection': original_growth_projection,
+                'enhanced_growth_projection': enhanced_growth_projection,
                 'sector_analysis': sector_analysis,
                 'recommendations': recommendations
             }
@@ -366,7 +431,7 @@ class EnhancedETFSharpeOptimizer:
     def _analyze_correlations(self) -> None:
         """进行相关性分析"""
         with Timer("相关性分析"):
-            logging.info("🔗 开始相关性分析...")
+            self.logger.info("🔗 开始相关性分析...")
             self.correlation_analysis = self.correlation_analyzer.generate_correlation_report(
                 self.returns, self.optimal_weights, self.config.etf_codes
             )
@@ -440,8 +505,28 @@ class EnhancedETFSharpeOptimizer:
                 print(f"  {i}. {rec}")
 
             print(f"\n📈 5年增长预测 (100万初始投资):")
-            print(f"  • 平均预期价值: {growth_proj.get('final_value_statistics', {}).get('mean', 0):,.0f}元")
-            print(f"  • 中位数价值: {growth_proj.get('final_value_statistics', {}).get('median', 0):,.0f}元")
+            print(f"  📊 原始策略:")
+            print(f"    • 平均预期价值: {growth_proj.get('final_value_statistics', {}).get('mean', 0):,.0f}元")
+            print(f"    • 中位数价值: {growth_proj.get('final_value_statistics', {}).get('median', 0):,.0f}元")
+
+            # 显示增强策略的增长预测
+            enhanced_growth_proj = self.investment_analysis.get('enhanced_growth_projection')
+            if enhanced_growth_proj:
+                print(f"  🚀 量化增强策略:")
+                print(f"    • 平均预期价值: {enhanced_growth_proj.get('final_value_statistics', {}).get('mean', 0):,.0f}元")
+                print(f"    • 中位数价值: {enhanced_growth_proj.get('final_value_statistics', {}).get('median', 0):,.0f}元")
+
+                # 计算改进情况
+                original_mean = growth_proj.get('final_value_statistics', {}).get('mean', 0)
+                enhanced_mean = enhanced_growth_proj.get('final_value_statistics', {}).get('mean', 0)
+                if original_mean > 0:
+                    improvement = ((enhanced_mean - original_mean) / original_mean) * 100
+                    if improvement > 0:
+                        print(f"    • 预期提升: +{improvement:.1f}%")
+                    else:
+                        print(f"    • 预期变化: {improvement:.1f}%")
+            else:
+                print(f"  🚀 量化增强策略: 暂无数据")
 
         # 权重分配
         print(f"\n⚖️ 最优权重分配:")
@@ -469,6 +554,204 @@ class EnhancedETFSharpeOptimizer:
         print("🎯 本报告提供了全面的投资决策支持，建议结合个人风险承受能力进行投资")
         print("="*100)
 
+    def _analyze_enhanced_quant_signals(self) -> None:
+        """分析高级量化指标"""
+        with Timer("高级量化指标分析"):
+            try:
+                self.logger.info("🔬 开始高级量化指标分析...")
+
+                # 生成增强信号
+                # 从raw_data中提取价格数据，raw_data已经合并了所有ETF的价格
+                price_columns = [col for col in self.raw_data.columns if col not in ['trade_date', 'ts_code']]
+                prices = self.raw_data[['trade_date'] + price_columns].set_index('trade_date')
+
+                # 直接使用简化量化指标版本
+                self.enhanced_signals = self.simple_quant_signals.generate_composite_signals(
+                    self.returns, prices
+                )
+                if self.enhanced_signals:
+                    print("\n" + "="*70)
+                    print("🔬 量化指标分析完成")
+                    print("="*70)
+
+                    # 显示量化信号结果
+                    if 'signal_analysis' in self.enhanced_signals:
+                        analysis = self.enhanced_signals['signal_analysis']
+                        print(f"\n📊 量化信号概况:")
+                        print(f"  • 信号数量: {analysis['signal_count']}")
+                        print(f"  • 最佳表现ETF: {list(analysis['top_performers'].keys())[:3]}")
+                        print(f"  • 信号类型: {', '.join(analysis['signal_names'][:5])}...")
+
+                        # 显示综合信号排名
+                        if 'composite_signal' in self.enhanced_signals:
+                            print(f"\n📈 综合信号排名 (前5名):")
+                            composite = self.enhanced_signals['composite_signal'].sort_values(ascending=False)
+                            for i, (etf, score) in enumerate(composite.head().items(), 1):
+                                etf_name = self.etf_names.get(etf, etf) if self.etf_names else etf
+                                print(f"  {i}. {etf_name} ({etf}): {score:.3f}")
+
+                    # 生成信号建议
+                    recommendations = self.simple_quant_signals.get_signal_recommendations(self.enhanced_signals)
+                    if recommendations:
+                        print(f"\n💡 量化信号建议:")
+                        for rec in recommendations[:3]:
+                            print(f"  • {rec}")
+                    print("="*70)
+
+                    # 显示主要信号
+                    if 'composite_signal' in self.enhanced_signals:
+                        print("\n📊 综合量化信号排名:")
+                        composite_signal = self.enhanced_signals['composite_signal'].sort_values(ascending=False)
+                        for etf, signal in composite_signal.items():
+                            etf_name = self.etf_names.get(etf, etf) if self.etf_names else etf
+                            print(f"  {etf_name} ({etf}): {signal:.3f}")
+
+                    # 显示信号分析
+                    if 'signal_normalized' in self.enhanced_signals:
+                        print("\n📈 分项信号强度:")
+                        signal_df = self.enhanced_signals['signal_normalized']
+                        for signal_type in signal_df.columns:
+                            print(f"\n  {signal_type}:")
+                            for etf in signal_df.index:
+                                signal_value = signal_df.loc[etf, signal_type]
+                                etf_name = self.etf_names.get(etf, etf) if self.etf_names else etf
+                                emoji = "📈" if signal_value > 0.5 else "📉" if signal_value < -0.5 else "➡️"
+                                print(f"    {emoji} {etf_name}: {signal_value:.2f}")
+
+                    # 计算信号表现
+                    signal_performance = self.advanced_quant_indicators.calculate_signal_performance(
+                        self.enhanced_signals, self.returns
+                    )
+
+                    if signal_performance:
+                        print("\n⚡ 信号历史表现:")
+                        for metric, value in signal_performance.items():
+                            print(f"  {metric}: {value:.4f}")
+
+                    self.logger.info("✅ 高级量化指标分析完成")
+
+            except Exception as e:
+                self.logger.error(f"❌ 高级量化指标分析失败: {e}")
+                self.enhanced_signals = {}
+
+    def _run_enhanced_optimization(self) -> None:
+        """运行增强投资组合优化"""
+        with Timer("增强投资组合优化"):
+            try:
+                self.logger.info("🚀 开始增强投资组合优化...")
+
+                if self.enhanced_signals:
+                    # 准备价格数据
+                    price_columns = [col for col in self.raw_data.columns if col not in ['trade_date', 'ts_code']]
+                    prices = self.raw_data[['trade_date'] + price_columns].set_index('trade_date')
+
+                    # 直接使用简化增强优化
+                    enhanced_weights, enhanced_metrics = self.simple_enhanced_optimizer.optimize_with_signals(
+                        self.returns, self.enhanced_signals
+                    )
+                    comparison = self.simple_enhanced_optimizer.compare_with_traditional(
+                        self.returns, self.enhanced_signals
+                    )
+
+                    print("\n" + "="*70)
+                    print("🚀 增强投资组合优化完成")
+                    print("="*70)
+
+                    # 显示增强优化结果
+                    print(f"\n📊 增强优化指标:")
+                    print(f"  • 夏普比率: {enhanced_metrics.get('sharpe_ratio', 0):.4f}")
+                    print(f"  • 预期年化收益: {enhanced_metrics.get('portfolio_return', 0):.2%}")
+                    print(f"  • 年化波动率: {enhanced_metrics.get('portfolio_volatility', 0):.2%}")
+                    print(f"  • 集中度指数 (HHI): {enhanced_metrics.get('concentration_hhi', 0):.0f}")
+                    print(f"  • 有效资产数量: {enhanced_metrics.get('effective_assets', 0):.1f}")
+                    print(f"  • 分散化比率: {enhanced_metrics.get('diversification_ratio', 0):.3f}")
+
+                    # 显示比较结果
+                    if 'improvement' in comparison:
+                        improvement = comparison['improvement']
+                        print(f"\n📈 相比传统优化:")
+                        print(f"  • 夏普比率提升: {improvement.get('sharpe_ratio_improvement', 0):+.4f}")
+                        print(f"  • 夏普比率提升幅度: {improvement.get('sharpe_improvement_pct', 0):+.1f}%")
+                        print(f"  • 收益变化: {improvement.get('return_change', 0):+.2%}")
+                        print(f"  • 风险变化: {improvement.get('volatility_change', 0):+.2%}")
+
+                    # 显示优化建议
+                    recommendations = self.simple_enhanced_optimizer.get_optimization_recommendations(comparison)
+                    if recommendations:
+                        print(f"\n💡 优化建议:")
+                        for rec in recommendations:
+                            print(f"  {rec}")
+
+                    print("="*70)
+
+                    # 将权重数组转换为字典格式
+                    enhanced_weights_dict = {}
+                    for etf, weight in zip(self.config.etf_codes, enhanced_weights):
+                        if weight > 0.001:  # 只保存有效权重
+                            enhanced_weights_dict[etf] = float(weight)
+
+                    self.enhanced_optimization_results = {
+                        'enhanced_weights': enhanced_weights_dict,
+                        'enhanced_metrics': enhanced_metrics,
+                        'comparison': comparison,
+                        'recommendations': self.enhanced_optimizer.get_optimization_recommendations(comparison)
+                    }
+
+                    # 显示增强优化结果
+                    print("\n" + "="*70)
+                    print("🚀 增强投资组合优化结果")
+                    print("="*70)
+
+                    print(f"\n📊 增强优化指标:")
+                    print(f"  • 夏普比率: {enhanced_metrics.get('sharpe_ratio', 0):.4f}")
+                    print(f"  • 预期年化收益: {enhanced_metrics.get('portfolio_return', 0):.2%}")
+                    print(f"  • 年化波动率: {enhanced_metrics.get('portfolio_volatility', 0):.2%}")
+                    print(f"  • 集中度指数 (HHI): {enhanced_metrics.get('concentration_hhi', 0):.0f}")
+                    print(f"  • 有效资产数量: {enhanced_metrics.get('effective_assets', 0):.1f}")
+                    print(f"  • 分散化比率: {enhanced_metrics.get('diversification_ratio', 0):.3f}")
+
+                    print(f"\n⚖️ 增强优化权重分配:")
+                    for etf, weight in zip(self.config.etf_codes, enhanced_weights):
+                        if weight > 0.001:
+                            etf_name = self.etf_names.get(etf, etf) if self.etf_names else etf
+                            print(f"  • {etf_name} ({etf}): {weight:.2%}")
+
+                    # 显示比较结果
+                    if 'improvement' in comparison:
+                        improvement = comparison['improvement']
+                        print(f"\n📈 相比传统优化:")
+                        print(f"  • 夏普比率提升: {improvement.get('sharpe_ratio_improvement', 0):+.4f}")
+                        print(f"  • 夏普比率提升幅度: {improvement.get('sharpe_improvement_pct', 0):+.1f}%")
+                        print(f"  • 收益变化: {improvement.get('return_change', 0):+.2%}")
+                        print(f"  • 风险变化: {improvement.get('volatility_change', 0):+.2%}")
+
+                    # 显示优化建议
+                    if self.enhanced_optimization_results['recommendations']:
+                        print(f"\n💡 优化建议:")
+                        for rec in self.enhanced_optimization_results['recommendations']:
+                            print(f"  {rec}")
+
+                    self.logger.info("✅ 增强投资组合优化完成")
+
+            except Exception as e:
+                self.logger.error(f"❌ 增强投资组合优化失败: {e}")
+                self.enhanced_optimization_results = {}
+
+            # 生成增强可视化图表
+            try:
+                self.enhanced_charts = self.enhanced_visualizer.generate_all_enhanced_charts(
+                    signals=self.enhanced_signals,
+                    comparison=self.enhanced_optimization_results.get('comparison') if self.enhanced_optimization_results else None,
+                    traditional_weights=self.optimal_weights,
+                    enhanced_weights=self.enhanced_optimization_results.get('enhanced_weights') if self.enhanced_optimization_results else None,
+                    etf_codes=self.config.etf_codes,
+                    etf_names=self.etf_names
+                )
+                self.logger.info("✅ 增强可视化图表生成完成")
+            except Exception as e:
+                self.logger.error(f"❌ 增强可视化图表生成失败: {e}")
+                self.enhanced_charts = []
+
 
 def main():
     """主函数"""
@@ -476,15 +759,18 @@ def main():
         # 设置日志
         setup_logging("INFO")
 
+        # 获取logger实例
+        logger = logging.getLogger(__name__)
+
         # 创建并运行增强版分析器
         enhanced_optimizer = EnhancedETFSharpeOptimizer()
         enhanced_optimizer.run_analysis()
 
     except KeyboardInterrupt:
-        logging.info("用户中断执行")
+        logger.info("用户中断执行")
         sys.exit(0)
     except Exception as e:
-        logging.error(f"程序执行失败: {e}")
+        logger.error(f"程序执行失败: {e}")
         sys.exit(1)
 
 
