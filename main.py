@@ -44,25 +44,17 @@ from src.investment_tools import (
 from src.html_report_generator import get_html_report_generator
 from src.correlation_analyzer import get_correlation_analyzer
 
-# 导入高级量化指标和增强优化器
-from src.advanced_quant_indicators import get_advanced_quant_indicators
+# 导入统一的量化信号模块
+from src.quant_signals import get_quant_signals, get_simple_quant_signals, get_advanced_quant_indicators
+
+# 导入增强优化器（保留原有模块）
 from src.enhanced_portfolio_optimizer import get_enhanced_portfolio_optimizer
 from src.enhanced_visualizer import get_enhanced_visualizer
-
-# 导入简化模块作为备用
-from src.simple_quant_signals import get_simple_quant_signals
 from src.simple_enhanced_optimizer import get_simple_enhanced_optimizer
 
-# 尝试导入优化器，优先使用scipy版本
-try:
-    from src.portfolio_optimizer_scipy import get_portfolio_optimizer_scipy as get_portfolio_optimizer
-    OPTIMIZER_TYPE = "scipy"
-except ImportError:
-    try:
-        from src.portfolio_optimizer import get_portfolio_optimizer
-        OPTIMIZER_TYPE = "cvxpy"
-    except ImportError:
-        raise ImportError("没有可用的优化器，请安装scipy或cvxpy")
+# 导入统一优化器
+from src.portfolio_optimizer import get_portfolio_optimizer
+OPTIMIZER_TYPE = "unified"
 
 
 class EnhancedETFSharpeOptimizer:
@@ -91,8 +83,10 @@ class EnhancedETFSharpeOptimizer:
         self.performance_attribution = get_performance_attribution()
         self.portfolio_analyzer = get_portfolio_analyzer()
 
-        # 初始化高级量化指标模块
-        self.advanced_quant_indicators = get_advanced_quant_indicators(self.config.trading_days)
+        # 初始化统一的量化信号模块
+        self.quant_signals = get_quant_signals(self.config.trading_days, mode='advanced')
+
+        # 初始化增强优化器
         self.enhanced_optimizer = get_enhanced_portfolio_optimizer(
             self.config.risk_free_rate, self.config.trading_days
         )

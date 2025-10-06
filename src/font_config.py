@@ -69,35 +69,6 @@ def setup_chinese_font():
         plt.rcParams['font.family'] = 'sans-serif'
         plt.rcParams['axes.unicode_minus'] = False
 
-def test_chinese_font():
-    """测试中文字体是否正常工作"""
-    try:
-        import matplotlib.pyplot as plt
-        import numpy as np
-
-        # 创建一个简单的测试图
-        fig, ax = plt.subplots(figsize=(8, 6))
-        x = np.linspace(0, 10, 100)
-        y = np.sin(x)
-
-        ax.plot(x, y, label='正弦波')
-        ax.set_title('中文字体测试 - ETF投资组合优化')
-        ax.set_xlabel('时间轴')
-        ax.set_ylabel('收益率')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-
-        # 保存测试图
-        test_path = 'outputs/font_test.png'
-        plt.savefig(test_path, dpi=300, bbox_inches='tight')
-        plt.close()
-
-        print(f"✅ 中文字体测试图已保存: {test_path}")
-        return True
-
-    except Exception as e:
-        print(f"❌ 中文字体测试失败: {e}")
-        return False
 
 # 在模块导入时自动设置字体
 if __name__ != "__main__":
